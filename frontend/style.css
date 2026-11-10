@@ -1,0 +1,703 @@
+
+:root {
+    --navy: #0b2a5b;
+    --blue: #0b4f94;
+    --link: #1565d8;
+    --text-soft: #3b5278;
+    --border: #d9e2ee;
+    --card-bg: rgba(248, 251, 255, 0.96);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    color: var(--navy);
+    background: #0b2a5b;
+}
+
+/* ---------- Main Desktop Page ---------- */
+
+.page {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 39%);
+    grid-template-rows: 1fr auto;
+
+    column-gap: 4%;
+    padding: 0 4% 0 0;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 70%,
+            rgba(11, 42, 91, 0.55) 88%,
+            rgba(11, 42, 91, 0.92) 100%
+        ),
+        url("itum.jpg") left center / cover no-repeat,
+        linear-gradient(
+            to bottom,
+            #8cc0ea 0%,
+            #cfe4f5 45%,
+            #e9d9b8 70%,
+            #3f6a3a 100%
+        );
+}
+
+/* ---------- Brand / Left Side ---------- */
+
+.brand {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding: 7.5% 0 0 12.5%;
+}
+
+.brand-top {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.brand-logo {
+    width: 108px;
+    height: auto;
+    display: block;
+}
+
+.brand-divider {
+    width: 2px;
+    height: 128px;
+    flex: none;
+    background: var(--navy);
+    opacity: 0.85;
+}
+
+.brand-name h1 {
+    font-size: clamp(42px, 5.2vw, 76px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--navy);
+}
+
+.brand-name p {
+    margin-top: 8px;
+    font-size: clamp(16px, 1.7vw, 25px);
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--navy);
+}
+
+.system-title {
+    margin-top: 34px;
+    font-size: clamp(20px, 2.2vw, 32px);
+    font-weight: 500;
+    letter-spacing: 2.4px;
+    color: #1a4a8f;
+}
+
+.tagline {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: clamp(13px, 1.2vw, 17px);
+    letter-spacing: 0.6px;
+    color: #3a6db0;
+}
+
+.tagline i {
+    width: 1px;
+    height: 16px;
+    background: #3a6db0;
+    opacity: 0.8;
+}
+
+/* ---------- Login Card / Right Side ---------- */
+
+.card {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+
+    width: 100%;
+    min-width: 0;
+    margin-top: 6vh;
+
+    position: relative;
+    overflow: hidden;
+
+    background: var(--card-bg);
+    border-radius: 22px;
+    padding: 24px 32px 28px;
+
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(11, 42, 91, 0.25);
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    top: -70px;
+    right: -60px;
+
+    width: 300px;
+    height: 150px;
+
+    background: #dcebfb;
+    border-radius: 0 0 0 100%;
+    opacity: 0.8;
+}
+
+.card::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    bottom: -40px;
+
+    width: 140px;
+    height: 110px;
+
+    background: #e1eefc;
+    border-radius: 100% 0 0 0;
+    opacity: 0.8;
+}
+
+.card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.card-logo {
+    width: 96px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto 14px;
+}
+
+.card h3 {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.card-sub {
+    margin: 14px 0 28px;
+    font-size: 16px;
+    color: var(--text-soft);
+}
+
+/* ---------- Input Fields ---------- */
+
+.field {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    height: 54px;
+    margin-bottom: 16px;
+
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0 16px;
+
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field:focus-within {
+    border-color: var(--link);
+    box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.15);
+}
+
+.field > svg {
+    width: 23px;
+    height: 23px;
+    flex: none;
+    margin-right: 14px;
+}
+
+.field input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+
+    border: 0;
+    outline: 0;
+    background: transparent;
+
+    font: inherit;
+    font-size: 16px;
+    color: var(--navy);
+}
+
+.field input::placeholder {
+    color: #7f8ea6;
+}
+
+svg {
+    fill: none;
+    stroke: var(--navy);
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.eye {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    padding: 4px;
+}
+
+.eye svg {
+    width: 24px;
+    height: 24px;
+    stroke: #6c7a90;
+}
+
+.eye .slash {
+    display: block;
+}
+
+.eye.on .slash {
+    display: none;
+}
+
+/* ---------- Error Message ---------- */
+
+.error {
+    min-height: 0;
+    font-size: 14px;
+    color: #c62828;
+    text-align: left;
+    margin: -6px 0 6px;
+}
+
+.error:empty {
+    display: none;
+}
+
+/* ---------- User Roles ---------- */
+
+.role-label {
+    text-align: left;
+    margin: 14px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--navy);
+}
+
+.roles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.role {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-width: 0;
+    padding: 14px 4px 12px;
+
+    background: #f1f4f9;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--navy);
+
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.role input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.role svg {
+    width: 32px;
+    height: 32px;
+}
+
+.role > svg[viewBox] path[fill="currentColor"] {
+    fill: var(--navy);
+}
+
+.dot {
+    width: 20px;
+    height: 20px;
+
+    border: 2px solid #b9c4d4;
+    border-radius: 50%;
+    background: #fff;
+    margin-top: 2px;
+}
+
+.role:has(input:checked) {
+    background: #dbeafd;
+    border-color: #1f7be0;
+}
+
+.role:has(input:checked) .dot {
+    border-color: #1f7be0;
+    background: radial-gradient(
+        circle,
+        #1f7be0 0 4.5px,
+        #fff 5px
+    );
+}
+
+.role:has(input:focus-visible) {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+/* ---------- Login Button ---------- */
+
+.login-btn {
+    width: 100%;
+    min-height: 52px;
+    margin-top: 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    border: 0;
+    border-radius: 28px;
+    background: var(--blue);
+    color: #fff;
+
+    font: inherit;
+    font-size: 18px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.login-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke: #fff;
+    stroke-width: 1.8;
+}
+
+.login-btn:hover {
+    background: #093f78;
+}
+
+.login-btn:active {
+    transform: translateY(1px);
+}
+
+.login-btn:focus-visible {
+    outline: 3px solid rgba(21, 101, 216, 0.4);
+    outline-offset: 2px;
+}
+
+/* ---------- Register Link ---------- */
+
+.register {
+    margin-top: 22px;
+    padding-top: 18px;
+
+    border-top: 1px solid #e3e9f1;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.register a {
+    color: var(--link);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register a:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Bottom Features ---------- */
+
+.features {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
+    padding: 24px 0 28px 8%;
+    gap: 0;
+}
+
+.feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+
+    padding: 0 28px;
+    text-align: center;
+
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.feature + .feature {
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.feature svg {
+    width: 38px;
+    height: 38px;
+    stroke: #fff;
+    stroke-width: 1.5;
+}
+
+/* ---------- Signature ---------- */
+
+.signature {
+    position: absolute;
+    right: 3%;
+    bottom: 3%;
+
+    font-family: "Dancing Script", cursive;
+    font-size: 22px;
+    line-height: 1.25;
+    color: #fff;
+
+    transform: rotate(-6deg);
+    text-align: right;
+}
+
+/* ---------- Smaller Desktop / Laptop ---------- */
+
+@media (min-width: 769px) and (max-width: 1200px) {
+    .page {
+        grid-template-columns: minmax(0, 1fr) minmax(350px, 42%);
+        column-gap: 3%;
+        padding-right: 3%;
+    }
+
+    .brand {
+        padding-left: 8%;
+    }
+
+    .brand-top {
+        gap: 18px;
+    }
+
+    .brand-logo {
+        width: 85px;
+    }
+
+    .brand-divider {
+        height: 100px;
+    }
+
+    .card {
+        padding: 22px 24px;
+    }
+
+    .feature {
+        padding: 0 18px;
+    }
+}
+
+/* ---------- Tablet / Mobile ---------- */
+
+@media (max-width: 768px) {
+    .page {
+        min-height: 100vh;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        row-gap: 28px;
+        padding: 0 5%;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(11, 42, 91, 0.12),
+                rgba(11, 42, 91, 0.85)
+            ),
+            url("itum.jpg") center top / cover no-repeat,
+            #8cc0ea;
+    }
+
+    .brand {
+        grid-column: 1;
+        grid-row: 1;
+        padding: 36px 0 0;
+    }
+
+    .brand-top {
+        gap: 16px;
+    }
+
+    .brand-logo {
+        width: 72px;
+    }
+
+    .brand-divider {
+        height: 80px;
+    }
+
+    .brand-name h1 {
+        font-size: clamp(32px, 7vw, 48px);
+    }
+
+    .brand-name p {
+        font-size: 15px;
+    }
+
+    .system-title {
+        margin-top: 24px;
+        font-size: 21px;
+    }
+
+    .card {
+        grid-column: 1;
+        grid-row: 2;
+
+        width: 100%;
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 24px 24px;
+    }
+
+    .features {
+        grid-column: 1;
+        grid-row: 3;
+
+        flex-wrap: wrap;
+        justify-content: center;
+        row-gap: 22px;
+        padding: 12px 0 70px;
+    }
+
+    .feature {
+        padding: 0 18px;
+    }
+
+    .signature {
+        bottom: 16px;
+        right: 5%;
+    }
+}
+
+/* ---------- Small Mobile ---------- */
+
+@media (max-width: 420px) {
+    .page {
+        padding: 0 4%;
+        row-gap: 22px;
+    }
+
+    .brand-top {
+        gap: 12px;
+    }
+
+    .brand-logo {
+        width: 58px;
+    }
+
+    .brand-divider {
+        height: 68px;
+    }
+
+    .brand-name h1 {
+        font-size: 29px;
+    }
+
+    .brand-name p {
+        font-size: 13px;
+    }
+
+    .system-title {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+
+    .tagline {
+        font-size: 12px;
+        gap: 8px;
+    }
+
+    .card {
+        padding: 22px 16px;
+        border-radius: 18px;
+    }
+
+    .card h3 {
+        font-size: 26px;
+    }
+
+    .card-sub {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .roles {
+        gap: 7px;
+    }
+
+    .role {
+        padding: 12px 3px 10px;
+        font-size: 12px;
+    }
+
+    .role svg {
+        width: 27px;
+        height: 27px;
+    }
+
+    .field {
+        height: 50px;
+        padding: 0 12px;
+    }
+
+    .field input {
+        font-size: 14px;
+    }
+
+    .feature {
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    .feature + .feature {
+        border-left: 0;
+    }
+}
+

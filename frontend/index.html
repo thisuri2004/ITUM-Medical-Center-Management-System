@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITUM Medical Center Management System - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+
+    <!-- LEFT: branding -->
+    <section class="brand">
+      <div class="brand-top">
+        <img class="brand-logo" src="itum logo.jpg" alt="University of Moratuwa crest">
+        <div class="brand-divider"></div>
+        <div class="brand-name">
+          <h1>ITUM</h1>
+          <p>Institute of Technology<br>University of Moratuwa</p>
+        </div>
+      </div>
+      <h2 class="system-title">Medical Center Management System</h2>
+      <p class="tagline"><span>Better Health</span><i></i><span>Healthier Campus</span><i></i><span>Brighter Future</span></p>
+    </section>
+
+    <!-- RIGHT: login card -->
+    <section class="card" aria-labelledby="welcome">
+      <img class="card-logo" src="itum logo.jpg" alt="University of Moratuwa crest">
+      <h3 id="welcome">Welcome Back</h3>
+      <p class="card-sub">Login to your account to continue</p>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+          <input type="text" id="username" placeholder="Username or Email" autocomplete="username">
+        </div>
+
+        <div class="field">
+          <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>
+          <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+          <button type="button" class="eye" id="togglePassword" aria-label="Show password">
+            <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 20L20 4"/></svg>
+          </button>
+        </div>
+
+        <p class="error" id="error" role="alert"></p>
+
+        <p class="role-label">Select Your Role</p>
+        <div class="roles">
+          <label class="role">
+            <input type="radio" name="role" value="student" checked>
+            <svg viewBox="0 0 24 24"><path d="M12 3L1.5 8.5 12 14l10.5-5.5L12 3z" fill="currentColor"/><path d="M6 12v4.5c0 1.5 2.7 3 6 3s6-1.5 6-3V12l-6 3.2L6 12z" fill="currentColor"/></svg>
+            <span>Student / Staff</span>
+            <b class="dot"></b>
+          </label>
+          <label class="role">
+            <input type="radio" name="role" value="doctor">
+            <svg viewBox="0 0 24 24"><path d="M6 3v6a4 4 0 0 0 8 0V3"/><path d="M5 3h2M13 3h2"/><path d="M10 13v2.5a4.5 4.5 0 0 0 9 0V13"/><circle cx="19" cy="11" r="2"/></svg>
+            <span>Doctor</span>
+            <b class="dot"></b>
+          </label>
+          <label class="role">
+            <input type="radio" name="role" value="admin">
+            <svg viewBox="0 0 24 24"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6l8-3z"/><path d="M12 8.5v6M9 11.5h6"/></svg>
+            <span>Admin</span>
+            <b class="dot"></b>
+          </label>
+        </div>
+
+        <button type="submit" class="login-btn">
+          Login
+          <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <p class="register">Don't have an account? <a href="register.html">Register here</a></p>
+    </section>
+
+    <!-- BOTTOM: features -->
+    <footer class="features">
+      <div class="feature">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-8.5-5.2-8.5-11.2A4.8 4.8 0 0 1 12 7a4.8 4.8 0 0 1 8.5 2.8C20.5 15.8 12 21 12 21z"/><path d="M5 12h3.5l1.5-3 3 6 1.5-3H19"/></svg>
+        <p>Quality Healthcare<br>Services</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3"/><circle cx="5.5" cy="9.5" r="2.2"/><circle cx="18.5" cy="9.5" r="2.2"/><path d="M6.5 20c0-3.6 2.4-5.8 5.5-5.8s5.5 2.2 5.5 5.8z"/><path d="M1.5 17c0-2.4 1.5-3.8 3.6-3.8M22.5 17c0-2.4-1.5-3.8-3.6-3.8"/></svg>
+        <p>For Students,<br>Staff &amp; Faculty</p>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6l8-3z"/><circle cx="12" cy="11.5" r="2.6"/></svg>
+        <p>Safe &bull; Reliable<br>&bull; Accessible</p>
+      </div>
+    </footer>
+
+    <p class="signature">Your Health<br>Our Priority</p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Medical Records - ITUM Medical Center</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background: #f4f7fc;
+            color: #1b2b45;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #0b2a5b;
+            color: white;
+            padding: 25px 18px;
+        }
+
+        .sidebar h2 {
+            font-size: 21px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar p {
+            color: #c9d8ee;
+            font-size: 13px;
+            margin-bottom: 35px;
+        }
+
+        .menu a {
+            display: block;
+            padding: 14px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #174783;
+        }
+
+        .logout {
+            display: block;
+            margin-top: 35px;
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+        }
+
+        .main {
+            flex: 1;
+            padding: 35px;
+            min-width: 0;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .topbar h1 {
+            font-size: 27px;
+            color: #0b2a5b;
+        }
+
+        .user-info {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .welcome {
+            margin-bottom: 25px;
+        }
+
+        .welcome h2 {
+            color: #0b2a5b;
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            color: #718096;
+        }
+
+        .records-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .record-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+            border-left: 4px solid #0b4f94;
+        }
+
+        .record-card h3 {
+            color: #0b2a5b;
+            margin-bottom: 18px;
+        }
+
+        .record-card p {
+            margin-bottom: 13px;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .record-card strong {
+            color: #3b5278;
+        }
+
+        .empty-message {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+            color: #718096;
+            grid-column: 1 / -1;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 11px 18px;
+            background: #0b4f94;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        @media(max-width: 650px) {
+            .sidebar {
+                width: 180px;
+                padding: 15px 10px;
+            }
+
+            .main {
+                padding: 18px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+
+        <h2>ITUM Medical</h2>
+        <p>Student Portal</p>
+
+        <nav class="menu">
+            <a href="student-dashboard.html">▦ &nbsp; Dashboard</a>
+            <a href="student-dashboard.html">▣ &nbsp; My Appointments</a>
+            <a href="#" class="active">▤ &nbsp; Medical Records</a>
+        </nav>
+
+        <a href="#" class="logout" onclick="logout()">↪ &nbsp; Logout</a>
+
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+            <h1>My Medical Records</h1>
+
+            <div class="user-info">
+                👤 <span id="studentName">Student</span>
+            </div>
+        </header>
+
+        <section class="welcome">
+            <h2>Medical History</h2>
+            <p>View your medical diagnosis and treatment records.</p>
+        </section>
+
+        <section class="records-container" id="recordsContainer">
+
+            <div class="empty-message">
+                Loading medical records...
+            </div>
+
+        </section>
+
+        <a href="student-dashboard.html" class="back-btn">
+            ← Back to Dashboard
+        </a>
+
+    </main>
+
+    <script>
+
+        const user = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        const container = document.getElementById("recordsContainer");
+
+        if (!user || !["student", "staff"].includes(user.role)) {
+
+            window.location.href = "index.html";
+
+        } else {
+
+            document.getElementById("studentName").textContent =
+                user.full_name;
+
+            loadMedicalRecords();
+        }
+
+        // Load Medical Records
+        async function loadMedicalRecords() {
+
+            try {
+
+                const response = await fetch(
+                    `http://127.0.0.1:5000/student/medical-records/${user.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "Unable to load medical records."
+                    );
+                }
+
+                container.innerHTML = "";
+
+                const records = data.medical_records;
+
+                if (records.length === 0) {
+
+                    container.innerHTML = `
+                        <div class="empty-message">
+                            No medical records available yet.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                records.forEach(record => {
+
+                    const card = document.createElement("div");
+                    card.className = "record-card";
+
+                    const heading = document.createElement("h3");
+                    heading.textContent = "Medical Record";
+
+                    const doctor = document.createElement("p");
+                    doctor.innerHTML = "<strong>Doctor:</strong> ";
+                    doctor.appendChild(
+                        document.createTextNode(record.doctor_name)
+                    );
+
+                    const date = document.createElement("p");
+                    date.innerHTML = "<strong>Record Date:</strong> ";
+                    date.appendChild(
+                        document.createTextNode(record.record_date)
+                    );
+
+                    const diagnosis = document.createElement("p");
+                    diagnosis.innerHTML = "<strong>Diagnosis:</strong> ";
+                    diagnosis.appendChild(
+                        document.createTextNode(record.diagnosis)
+                    );
+
+                    const treatment = document.createElement("p");
+                    treatment.innerHTML = "<strong>Treatment:</strong> ";
+                    treatment.appendChild(
+                        document.createTextNode(record.treatment)
+                    );
+
+                    card.appendChild(heading);
+                    card.appendChild(doctor);
+                    card.appendChild(date);
+                    card.appendChild(diagnosis);
+                    card.appendChild(treatment);
+
+                    container.appendChild(card);
+
+                });
+
+            } catch (error) {
+
+                container.innerHTML = `
+                    <div class="empty-message">
+                        ${error.message}
+                    </div>
+                `;
+
+                console.error(error);
+            }
+        }
+
+        function logout() {
+
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+
+        }
+
+    </script>
+
+</body>
+</html>
