@@ -237,6 +237,40 @@
                               placeholder="Enter treatment details"></textarea>
                 </div>
 
+               <div class="prescription-section">
+               <h3>Prescription Details</h3>
+                <div class="form-group">
+                   <label for="medicineName">Medicine Name</label>
+                   <input type="text" id="medicineName"
+                   placeholder="Enter medicine name">
+                </div>
+
+                <div class="form-group">
+                   <label for="dosage">Dosage</label>
+                   <input type="text" id="dosage"
+                   placeholder="e.g. 500mg">
+                </div>
+
+    <div class="form-group">
+        <label for="frequency">Frequency</label>
+        <input type="text" id="frequency"
+               placeholder="e.g. Twice a day">
+    </div>
+
+    <div class="form-group">
+        <label for="duration">Duration</label>
+        <input type="text" id="duration"
+               placeholder="e.g. 5 days">
+    </div>
+
+    <div class="form-group">
+        <label for="instructions">Additional Instructions</label>
+        <textarea id="instructions"
+                  placeholder="Enter additional instructions"></textarea>
+    </div>
+
+</div> 
+
                 <button type="submit">Save Medical Record</button>
 
                 <p id="message"></p>
@@ -327,16 +361,43 @@
             async function(event) {
 
                 event.preventDefault();
+                const submitButton = event.target.querySelector(
+    'button[type="submit"]'
+);
+
+if (submitButton.disabled) {
+    return;
+}
+
+submitButton.disabled = true;
+submitButton.textContent = "Saving...";
 
                 const patientId = patientSelect.value;
                 const diagnosis =
                     document.getElementById("diagnosis").value.trim();
                 const treatment =
                     document.getElementById("treatment").value.trim();
+                const medicineName =
+                    document.getElementById("medicineName").value.trim();
+
+                const dosage =
+                    document.getElementById("dosage").value.trim();
+
+                const frequency =
+                    document.getElementById("frequency").value.trim();
+
+                const duration =
+                    document.getElementById("duration").value.trim();
+
+                const instructions =
+                    document.getElementById("instructions").value.trim();
 
                 if (!patientId || !diagnosis || !treatment) {
                     message.textContent = "Please fill in all fields.";
                     message.style.color = "#dc3545";
+
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Save Medical Record";
                     return;
                 }
 
@@ -352,7 +413,13 @@
                                 user_id: loggedInUser.user_id,
                                 patient_id: Number(patientId),
                                 diagnosis: diagnosis,
-                                treatment: treatment
+                                treatment: treatment,
+
+                                medicine_name: medicineName,
+                                dosage: dosage,
+                                frequency: frequency,
+                                duration: duration,
+                                instructions: instructions
                             })
                         }
                     );
@@ -367,6 +434,7 @@
 
                     message.textContent = data.message;
                     message.style.color = "#198754";
+                    submitButton.textContent = "Saved Successfully";
 
                     document.getElementById("recordForm").reset();
                     registrationInput.value = "";
@@ -374,6 +442,9 @@
                 } catch (error) {
                     message.textContent = error.message;
                     message.style.color = "#dc3545";
+
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Save Medical Record";
                 }
             }
         );

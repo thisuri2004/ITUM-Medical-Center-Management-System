@@ -299,13 +299,57 @@
                     );
 
                     card.appendChild(heading);
-                    card.appendChild(doctor);
-                    card.appendChild(date);
-                    card.appendChild(diagnosis);
-                    card.appendChild(treatment);
+card.appendChild(doctor);
+card.appendChild(date);
+card.appendChild(diagnosis);
+card.appendChild(treatment);
 
-                    container.appendChild(card);
+// Prescription Details
+if (record.medicine_name) {
 
+    const prescriptionHeading = document.createElement("h4");
+    prescriptionHeading.textContent = "Prescription Details";
+
+    card.appendChild(prescriptionHeading);
+
+    const medicine = document.createElement("p");
+    medicine.innerHTML = "<strong>Medicine Name:</strong> ";
+    medicine.appendChild(
+        document.createTextNode(record.medicine_name)
+    );
+
+    const dosage = document.createElement("p");
+    dosage.innerHTML = "<strong>Dosage:</strong> ";
+    dosage.appendChild(
+        document.createTextNode(record.dosage || "N/A")
+    );
+
+    const frequency = document.createElement("p");
+    frequency.innerHTML = "<strong>Frequency:</strong> ";
+    frequency.appendChild(
+        document.createTextNode(record.frequency || "N/A")
+    );
+
+    const duration = document.createElement("p");
+    duration.innerHTML = "<strong>Duration:</strong> ";
+    duration.appendChild(
+        document.createTextNode(record.duration || "N/A")
+    );
+
+    const instructions = document.createElement("p");
+    instructions.innerHTML = "<strong>Additional Instructions:</strong> ";
+    instructions.appendChild(
+        document.createTextNode(record.instructions || "N/A")
+    );
+
+        card.appendChild(medicine);
+        card.appendChild(dosage);
+        card.appendChild(frequency);
+        card.appendChild(duration);
+        card.appendChild(instructions);
+    }
+
+        container.appendChild(card);
                 });
 
             } catch (error) {

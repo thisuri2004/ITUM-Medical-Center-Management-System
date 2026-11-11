@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Certificate Submission</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #0b2a5b;
+            padding: 35px 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 5px 22px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #0b2a5b;
+        }
+
+        .description {
+            color: #66758c;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d9e2ee;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input:focus, textarea:focus {
+            outline: 2px solid #b8d5ff;
+            border-color: #1565d8;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #0b4f94;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #0b2a5b;
+        }
+
+        #message {
+            margin-top: 18px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 25px;
+            color: #1565d8;
+            text-decoration: none;
+        }
+
+        @media (max-width: 550px) {
+            .date-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="student-dashboard.html" class="back-link">
+        ← Back to Dashboard
+    </a>
+
+    <h2>Medical Certificate Submission</h2>
+
+    <p class="description">
+        Submit your medical certificate for doctor review.
+        Please provide accurate details.
+    </p>
+
+    <form id="submissionForm">
+
+        <div class="date-row">
+
+            <div class="form-group">
+                <label for="leaveFrom">Leave From</label>
+                <input type="date" id="leaveFrom" required>
+            </div>
+
+            <div class="form-group">
+                <label for="leaveTo">Leave To</label>
+                <input type="date" id="leaveTo" required>
+            </div>
+
+        </div>
+
+        <div class="form-group">
+            <label for="reason">Reason for Medical Leave</label>
+            <textarea id="reason"
+                placeholder="Enter your medical leave reason..."
+                required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="medicalDocument">Upload Medical Certificate</label>
+            <input type="file"
+                id="medicalDocument"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required>
+            <small>Accepted formats: PDF, JPG, JPEG, PNG (Maximum 50 MB)</small>
+        </div>
+
+        <button type="submit" class="submit-btn">
+            Submit Medical Certificate
+        </button>
+
+    </form>
+
+    <p id="message"></p>
+
+</div>
+
+<script>
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    if (!user || !["student", "staff"].includes(user.role)) {
+        window.location.href = "index.html";
+    }
+
+    const form = document.getElementById("submissionForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const leaveFrom = document.getElementById("leaveFrom").value;
+        const leaveTo = document.getElementById("leaveTo").value;
+        const reason = document.getElementById("reason").value.trim();
+        const file = document.getElementById("medicalDocument").files[0];
+
+        if (leaveTo < leaveFrom) {
+            message.style.color = "red";
+            message.textContent =
+                "Leave To date cannot be before Leave From date.";
+            return;
+        }
+
+        if (!file || file.size > 50 * 1024 * 1024) {
+            message.style.color = "red";
+            message.textContent =
+                "Please select a file smaller than 50 MB.";
+            return;
+        }
+
+        const allowedTypes = [
+            "application/pdf",
+            "image/jpeg",
+            "image/png"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            message.style.color = "red";
+            message.textContent = "Invalid file format.";
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("user_id", user.user_id);
+        formData.append("leave_from", leaveFrom);
+        formData.append("leave_to", leaveTo);
+        formData.append("reason", reason);
+        formData.append("medical_document", file);
+
+        try {
+            const response = await fetch(
+                "http://127.0.0.1:5000/medical-submissions",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                message.style.color = "green";
+                message.textContent = data.message;
+                form.reset();
+            } else {
+                message.style.color = "red";
+                message.textContent = data.error || "Submission failed.";
+            }
+
+        } catch (error) {
+            message.style.color = "red";
+            message.textContent = "Unable to connect to the server.";
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -512,9 +512,14 @@ td {
          <span class="menu-label">Medical Records</span>
        </a>
 
-        <a href="#" onclick="showMessage('Medical Certificate Submission')">
+        <a href="#" onclick="window.location.href='medical-submission.html'">
             <span class="menu-icon">▧</span>
             <span class="menu-label">Medical Submission</span>
+        </a>
+
+        <a href="student-medical-submissions.html">
+            <span class="menu-icon">📋</span>
+            <span class="menu-label">My Medical Submissions</span>
         </a>
 
         <a href="#" onclick="showMessage('Prescriptions')">
@@ -658,10 +663,16 @@ td {
                     <p>View your records</p>
                 </button>
 
-                <button class="action" onclick="showMessage('Medical Submission')">
-                    <div class="action-icon">📄</div>
-                    <h4>Submit Medical</h4>
-                    <p>Upload certificate</p>
+                <button class="action" onclick="window.location.href='medical-submission.html'">
+                   <div class="action-icon">📄</div>
+                   <h4>Submit Medical</h4>
+                   <p>Upload certificate</p>
+                </button>
+
+                <button class="action" onclick="window.location.href='student-medical-submissions.html'">
+                   <div class="action-icon">📑</div>
+                   <h4>My Medical Submissions</h4>
+                   <p>Track your submissions</p>
                 </button>
 
                 <button class="action" onclick="showMessage('Notifications')">

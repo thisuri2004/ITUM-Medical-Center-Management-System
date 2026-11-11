@@ -1,11 +1,38 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
 
+import os
+import uuid
+from werkzeug.utils import secure_filename
+
 app = Flask(__name__)
 CORS(app)
+
+# Medical Certificate Upload Settings
+
+UPLOAD_FOLDER = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "uploads"
+)
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Maximum upload size: 50 MB
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+
+ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
+
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
 
 
 # MySQL Database Connection
@@ -553,6 +580,11 @@ def create_medical_record():
     patient_id = data.get("patient_id")
     diagnosis = data.get("diagnosis", "").strip()
     treatment = data.get("treatment", "").strip()
+    medicine_name = data.get("medicine_name", "").strip()
+    dosage = data.get("dosage", "").strip()
+    frequency = data.get("frequency", "").strip()
+    duration = data.get("duration", "").strip()
+    instructions = data.get("instructions", "").strip()
 
     if not all([user_id, patient_id, diagnosis, treatment]):
         return jsonify({
@@ -606,6 +638,25 @@ def create_medical_record():
             treatment,
             date.today()
         ))
+        # Get the newly created medical record ID
+        record_id = cursor.lastrowid
+
+        # Save prescription if medicine name is provided
+        if medicine_name:
+
+            cursor.execute("""
+                INSERT INTO prescriptions
+                (record_id, medicine_name, dosage, frequency,
+                 duration, instructions)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                record_id,
+                medicine_name,
+                dosage,
+                frequency,
+                duration,
+                instructions
+            ))
 
         connection.commit()
 
@@ -694,10 +745,16 @@ def get_student_medical_records(user_id):
                 mr.diagnosis,
                 mr.treatment,
                 mr.record_date,
-                u.full_name AS doctor_name
+                u.full_name AS doctor_name,
+                p.medicine_name,
+                p.dosage,
+                p.frequency,
+                p.duration,
+                p.instructions
             FROM medical_records mr
             JOIN doctors d ON mr.doctor_id = d.doctor_id
             JOIN users u ON d.user_id = u.user_id
+            LEFT JOIN prescriptions p ON mr.record_id = p.record_id
             WHERE mr.patient_id = %s
             ORDER BY mr.record_date DESC
         """, (patient["patient_id"],))
@@ -719,6 +776,522 @@ def get_student_medical_records(user_id):
             cursor.close()
 
         if connection and connection.is_connected():
+            connection.close()
+
+            # Submit Medical Certificate
+@app.route("/medical-submissions", methods=["POST"])
+def submit_medical_certificate():
+
+    user_id = request.form.get("user_id")
+    leave_from = request.form.get("leave_from")
+    leave_to = request.form.get("leave_to")
+    reason = request.form.get("reason", "").strip()
+
+    medical_document = request.files.get("medical_document")
+
+    # Check required details
+    if not all([user_id, leave_from, leave_to, reason, medical_document]):
+        return jsonify({
+            "error": "All medical submission details are required."
+        }), 400
+
+    # Validate user ID
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user ID."}), 400
+
+    # Validate dates
+    try:
+        from_date = date.fromisoformat(leave_from)
+        to_date = date.fromisoformat(leave_to)
+
+        if to_date < from_date:
+            return jsonify({
+                "error": "Leave To date cannot be before Leave From date."
+            }), 400
+
+    except ValueError:
+        return jsonify({"error": "Invalid leave dates."}), 400
+
+    # Check file
+    if not medical_document.filename:
+        return jsonify({"error": "Please select a file."}), 400
+
+    if not allowed_file(medical_document.filename):
+        return jsonify({
+            "error": "Only PDF, JPG, JPEG and PNG files are allowed."
+        }), 400
+
+    connection = None
+    saved_file_path = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Check student/staff and get patient ID
+        cursor.execute("""
+            SELECT p.patient_id
+            FROM patients p
+            JOIN users u ON p.user_id = u.user_id
+            WHERE p.user_id = %s
+            AND u.role IN ('student', 'staff')
+        """, (user_id,))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            return jsonify({
+                "error": "Student or staff account not found."
+            }), 404
+
+        patient_id = patient["patient_id"]
+
+        # Generate safe unique filename
+        original_filename = secure_filename(
+            medical_document.filename
+        )
+
+        extension = original_filename.rsplit(".", 1)[1].lower()
+
+        unique_filename = f"{uuid.uuid4().hex}.{extension}"
+
+        saved_file_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            unique_filename
+        )
+
+        # Save uploaded document
+        medical_document.save(saved_file_path)
+
+        # Store relative file path in database
+        database_file_path = os.path.join(
+            "uploads",
+            unique_filename
+        ).replace("\\", "/")
+
+        # Insert submission
+        cursor.execute("""
+            INSERT INTO medical_submissions
+            (
+                patient_id,
+                doctor_id,
+                leave_from,
+                leave_to,
+                reason,
+                medical_document,
+                status
+            )
+            VALUES (%s, NULL, %s, %s, %s, %s, 'pending')
+        """, (
+            patient_id,
+            leave_from,
+            leave_to,
+            reason,
+            database_file_path
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Medical certificate submitted successfully.",
+            "submission_id": cursor.lastrowid
+        }), 201
+
+    except mysql.connector.Error as error:
+
+        if connection:
+            connection.rollback()
+
+        if saved_file_path and os.path.exists(saved_file_path):
+            os.remove(saved_file_path)
+
+        print("Database Error:", error)
+
+        return jsonify({
+            "error": "Database error occurred."
+        }), 500
+
+    except Exception as error:
+
+        if connection:
+            connection.rollback()
+
+        if saved_file_path and os.path.exists(saved_file_path):
+            os.remove(saved_file_path)
+
+        print("Submission Error:", error)
+
+        return jsonify({
+            "error": "Unable to submit medical certificate."
+        }), 500
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+
+# Handle files exceeding 50 MB
+@app.errorhandler(413)
+def file_too_large(error):
+    return jsonify({
+        "error": "File is too large. Maximum allowed size is 50 MB."
+    }), 413
+
+    # Get Medical Certificate Submissions for Doctor
+@app.route("/doctor/medical-submissions/<int:user_id>", methods=["GET"])
+def get_doctor_medical_submissions(user_id):
+
+    connection = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify doctor account
+        cursor.execute("""
+            SELECT doctor_id
+            FROM doctors
+            WHERE user_id = %s
+        """, (user_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({
+                "error": "Doctor account not found."
+            }), 404
+
+        # Get medical submissions
+        cursor.execute("""
+            SELECT
+                ms.submission_id,
+                ms.patient_id,
+                ms.leave_from,
+                ms.leave_to,
+                ms.reason,
+                ms.medical_document,
+                ms.status,
+                ms.doctor_remarks,
+                ms.submitted_at,
+                u.full_name AS student_name,
+                p.registration_number,
+                p.patient_type
+
+            FROM medical_submissions ms
+
+            JOIN patients p
+                ON ms.patient_id = p.patient_id
+
+            JOIN users u
+                ON p.user_id = u.user_id
+
+            ORDER BY ms.submitted_at DESC
+        """)
+
+        submissions = cursor.fetchall()
+
+        for submission in submissions:
+            if submission["leave_from"]:
+                submission["leave_from"] = str(
+                    submission["leave_from"]
+                )
+
+            if submission["leave_to"]:
+                submission["leave_to"] = str(
+                    submission["leave_to"]
+                )
+
+            if submission["submitted_at"]:
+                submission["submitted_at"] = str(
+                    submission["submitted_at"]
+                )
+
+        return jsonify({
+            "submissions": submissions
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        print("Database Error:", error)
+
+        return jsonify({
+            "error": "Unable to load medical submissions."
+        }), 500
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+            # View Uploaded Medical Certificate
+@app.route("/doctor/medical-submissions/<int:submission_id>/document", methods=["GET"])
+def view_medical_certificate(submission_id):
+
+    user_id = request.args.get("user_id")
+
+    if not user_id:
+        return jsonify({"error": "Doctor user ID is required."}), 400
+
+    connection = None
+
+    try:
+        user_id = int(user_id)
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify doctor
+        cursor.execute("""
+            SELECT doctor_id
+            FROM doctors
+            WHERE user_id = %s
+        """, (user_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({"error": "Doctor account not found."}), 403
+
+        # Find submitted document
+        cursor.execute("""
+            SELECT medical_document
+            FROM medical_submissions
+            WHERE submission_id = %s
+        """, (submission_id,))
+
+        submission = cursor.fetchone()
+
+        if not submission:
+            return jsonify({"error": "Submission not found."}), 404
+
+        filename = os.path.basename(
+            submission["medical_document"]
+        )
+
+        if not filename:
+            return jsonify({"error": "Document not found."}), 404
+
+        file_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            filename
+        )
+
+        if not os.path.isfile(file_path):
+            return jsonify({"error": "Uploaded file is missing."}), 404
+
+        return send_from_directory(
+            app.config["UPLOAD_FOLDER"],
+            filename,
+            as_attachment=False
+        )
+
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid doctor ID."}), 400
+
+    except Exception as error:
+        print("Document Error:", error)
+        return jsonify({"error": "Unable to open document."}), 500
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+@app.route("/medical-submissions/<int:submission_id>/status", methods=["PUT"])
+def update_medical_submission_status(submission_id):
+    data = request.get_json()
+
+    user_id = data.get("user_id")
+    status = data.get("status")
+    doctor_remarks = data.get("doctor_remarks", "").strip()
+
+    if not user_id or status not in ["accepted", "rejected"]:
+        return jsonify({"message": "Invalid request"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT doctor_id FROM doctors WHERE user_id = %s",
+            (user_id,)
+        )
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({"message": "Doctor not found"}), 403
+
+        cursor.execute("""
+            SELECT status FROM medical_submissions
+            WHERE submission_id = %s
+        """, (submission_id,))
+
+        submission = cursor.fetchone()
+
+        if not submission:
+            return jsonify({"message": "Submission not found"}), 404
+
+        if submission["status"] != "pending":
+            return jsonify({
+                "message": "This submission has already been reviewed"
+            }), 400
+
+        cursor.execute("""
+            UPDATE medical_submissions
+            SET doctor_id = %s,
+                status = %s,
+                doctor_remarks = %s,
+                reviewed_at = NOW()
+            WHERE submission_id = %s
+        """, (
+            doctor["doctor_id"],
+            status,
+            doctor_remarks,
+            submission_id
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            "message": f"Medical submission {status} successfully"
+        }), 200
+
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"message": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/student/medical-submissions/<int:user_id>", methods=["GET"])
+def get_student_medical_submissions(user_id):
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT patient_id
+            FROM patients
+            WHERE user_id = %s
+        """, (user_id,))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            return jsonify({"message": "Patient not found"}), 404
+
+        cursor.execute("""
+            SELECT
+                submission_id,
+                leave_from,
+                leave_to,
+                reason,
+                medical_document,
+                status,
+                doctor_remarks,
+                submitted_at,
+                reviewed_at
+            FROM medical_submissions
+            WHERE patient_id = %s
+            ORDER BY submitted_at DESC
+        """, (patient["patient_id"],))
+
+        submissions = cursor.fetchall()
+
+        for item in submissions:
+            for key in ["leave_from", "leave_to", "submitted_at", "reviewed_at"]:
+                if item[key]:
+                    item[key] = str(item[key])
+
+        return jsonify({
+            "submissions": submissions
+        }), 200
+
+    except Exception as error:
+        print("Student Medical Submissions Error:", error)
+        return jsonify({"message": "Unable to load submissions"}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/student/medical-submissions/<int:submission_id>/document", methods=["GET"])
+def view_student_medical_certificate(submission_id):
+
+    user_id = request.args.get("user_id")
+
+    if not user_id:
+        return jsonify({"message": "User ID is required"}), 400
+
+    connection = None
+    cursor = None
+
+    try:
+        user_id = int(user_id)
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Get student's patient ID
+        cursor.execute("""
+            SELECT patient_id
+            FROM patients
+            WHERE user_id = %s
+        """, (user_id,))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            return jsonify({"message": "Patient not found"}), 404
+
+        # Check whether this submission belongs to the student
+        cursor.execute("""
+            SELECT medical_document
+            FROM medical_submissions
+            WHERE submission_id = %s
+            AND patient_id = %s
+        """, (submission_id, patient["patient_id"]))
+
+        submission = cursor.fetchone()
+
+        if not submission:
+            return jsonify({"message": "Submission not found"}), 404
+
+        filename = os.path.basename(
+            submission["medical_document"]
+        )
+
+        file_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            filename
+        )
+
+        if not os.path.isfile(file_path):
+            return jsonify({"message": "Document not found"}), 404
+
+        return send_from_directory(
+            app.config["UPLOAD_FOLDER"],
+            filename,
+            as_attachment=False
+        )
+
+    except (ValueError, TypeError):
+        return jsonify({"message": "Invalid user ID"}), 400
+
+    except Exception as error:
+        print("Student Document Error:", error)
+        return jsonify({"message": "Unable to open document"}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection:
             connection.close()
 
 if __name__ == "__main__":
