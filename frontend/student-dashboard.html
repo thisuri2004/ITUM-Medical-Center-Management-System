@@ -58,6 +58,15 @@ body {
     place-items: center;
     font-size: 25px;
     font-weight: 800;
+    overflow: hidden;
+    padding: 3px;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 9px;
 }
 
 .logo h2 {
@@ -68,6 +77,52 @@ body {
     font-size: 10px;
     color: #c5d6f0;
     margin-top: 4px;
+}
+
+/* SIDEBAR STUDENT PROFILE */
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 5px 5px;
+    padding: 14px 10px;
+    background: #17477f;
+    border-radius: 12px;
+    text-decoration: none;
+    color: white;
+}
+
+.sidebar-user:hover {
+    background: #205895;
+}
+
+.sidebar-user img,
+.sidebar-user-initial {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+}
+
+.sidebar-user-initial {
+    display: grid;
+    place-items: center;
+    background: #dceafe;
+    color: #0b4f94;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.sidebar-user-info h4 {
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.sidebar-user-info p {
+    font-size: 10px;
+    color: #c5d6f0;
 }
 
 .menu-title {
@@ -166,6 +221,11 @@ body {
     font-size: 11px;
     color: #8492a8;
     margin-top: 4px;
+}
+
+/* Hide top-right profile */
+.topbar .profile {
+    display: none;
 }
 
 /* WELCOME BANNER */
@@ -482,12 +542,35 @@ td {
 <aside class="sidebar">
 
     <div class="logo">
-        <div class="logo-icon">+</div>
+        <div class="logo-icon">
+            <img src="itum logo.jpg" alt="ITUM Logo">
+        </div>
         <div class="logo-text">
             <h2>ITUM Medical</h2>
             <p>MEDICAL CENTER SYSTEM</p>
         </div>
     </div>
+
+    <!-- STUDENT PROFILE -->
+<a href="student-profile.html" class="sidebar-user">
+
+    <img
+        id="sidebarProfileImage"
+        src=""
+        alt="Student Profile"
+        style="display: none;"
+    >
+
+    <div id="sidebarProfileInitial" class="sidebar-user-initial">
+        S
+    </div>
+
+    <div class="sidebar-user-info">
+        <h4 id="sidebarStudentName">Student</h4>
+        <p>Student Account</p>
+    </div>
+
+</a>
 
     <p class="menu-title">MAIN MENU</p>
 
@@ -522,20 +605,29 @@ td {
             <span class="menu-label">My Medical Submissions</span>
         </a>
 
-        <a href="#" onclick="showMessage('Prescriptions')">
+        <a href="student-medical-records.html">
             <span class="menu-icon">✚</span>
             <span class="menu-label">Prescriptions</span>
         </a>
 
-        <a href="#" onclick="showMessage('Notifications')">
-            <span class="menu-icon">♧</span>
-            <span class="menu-label">Notifications</span>
+        <a href="student-notifications.html">
+        <span class="menu-icon">♧</span>
+        <span class="menu-label">Notifications</span>
+        <span id="notificationCount" style="
+           background: #e53935;
+           color: white;
+           padding: 3px 8px;
+           border-radius: 20px;
+           font-size: 12px;
+           font-weight: bold;
+           display: none;
+           ">0</span>
         </a>
-    </nav>
+        </nav>
 
     <div class="sidebar-bottom">
-        <a onclick="showMessage('My Profile')">
-            <span>⚙ &nbsp; My Profile</span>
+        <a href="student-profile.html">
+          <span>⚙ &nbsp; My Profile</span>
         </a>
         <a onclick="logout()">
             <span>↪ &nbsp; Logout</span>
@@ -675,7 +767,7 @@ td {
                    <p>Track your submissions</p>
                 </button>
 
-                <button class="action" onclick="showMessage('Notifications')">
+                <button class="action" onclick="window.location.href='student-notifications.html'">
                     <div class="action-icon">🔔</div>
                     <h4>Notifications</h4>
                     <p>View updates</p>
@@ -689,46 +781,40 @@ td {
     <!-- BOTTOM SECTIONS -->
     <section class="bottom-grid">
 
-        <div class="panel">
-            <h3>Medical Certificate Status</h3>
+       <div class="panel">
+           <h3>Medical Certificate Status</h3>
 
-            <div class="info-item">
-                <div class="info-icon">📄</div>
-                <div>
-                    <h4>Medical Submission</h4>
-                    <p>No medical certificates submitted yet.</p>
-                </div>
-            </div>
+    <div
+        id="medicalSubmissionStatus"
+        onclick="window.location.href='student-medical-submissions.html'"
+        style="cursor: pointer;"
+    >
+    <div class="info-item">
+        <div class="info-icon">📄</div>
+        <div>
+            <h4>Medical Submission</h4>
+            <p>Loading medical submissions...</p>
+        </div>
+    </div>
 
-            <div class="info-item">
-                <div class="info-icon">✓</div>
-                <div>
-                    <h4>Review Status</h4>
-                    <p>Your submitted certificates will appear here.</p>
-                </div>
-            </div>
+</div>
         </div>
 
         <div class="panel">
-            <h3>Recent Notifications</h3>
+    <h3>Recent Notifications</h3>
 
-            <div class="info-item">
-                <div class="info-icon">🔔</div>
-                <div>
-                    <h4>Welcome to ITUM Medical Center</h4>
-                    <p>Your student account is ready to use.</p>
-                </div>
-            </div>
+    <div id="recentNotifications">
 
-            <div class="info-item">
-                <div class="info-icon">ℹ</div>
-                <div>
-                    <h4>Stay Updated</h4>
-                    <p>New appointment and medical updates will appear here.</p>
-                </div>
+        <div class="info-item">
+            <div class="info-icon">🔔</div>
+            <div>
+                <h4>Recent Notifications</h4>
+                <p>Loading notifications...</p>
             </div>
         </div>
 
+    </div>
+</div>
     </section>
 
     <footer class="footer">
@@ -843,6 +929,214 @@ async function loadStudentAppointments() {
     }
 }
 
+async function loadMedicalRecordCount() {
+
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    const recordStat = document.getElementById("medicalRecords");
+
+    if (!user || !user.user_id || !recordStat) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/student/medical-records/${user.user_id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error("Unable to load medical records.");
+        }
+
+        const records = data.medical_records || [];
+
+        recordStat.textContent = records.length;
+
+    } catch (error) {
+        console.error("Medical record count error:", error);
+    }
+}
+
+async function loadMedicalSubmissionStatus() {
+
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    const container = document.getElementById("medicalSubmissionStatus");
+
+    if (!user || !user.user_id || !container) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/student/medical-submissions/${user.user_id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error("Unable to load medical submissions.");
+        }
+
+        const submissions = data.submissions || [];
+
+        if (submissions.length === 0) {
+            container.innerHTML = `
+                <div class="info-item">
+                    <div class="info-icon">📄</div>
+                    <div>
+                        <h4>Medical Submission</h4>
+                        <p>No medical certificates submitted yet.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+    container.innerHTML = submissions.map(item => `
+    <a href="student-medical-submissions.html?id=${encodeURIComponent(item.submission_id)}"
+       class="info-item"
+       style="cursor: pointer; text-decoration: none; color: inherit;">
+
+        <div class="info-icon">📄</div>
+
+        <div>
+            <h4>Medical Submission #${item.submission_id}</h4>
+            <p><strong>Status:</strong> ${item.status}</p>
+            <p><strong>Leave:</strong> ${item.leave_from} to ${item.leave_to}</p>
+        </div>
+
+    </a>
+`).join("");
+
+    } catch (error) {
+        console.error("Medical submission status error:", error);
+        container.textContent = "Unable to load medical certificate status.";
+    }
+}
+
+async function loadRecentNotifications() {
+
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    const container = document.getElementById("recentNotifications");
+
+    if (!user || !user.user_id || !container) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/student/notifications/${user.user_id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error("Unable to load notifications.");
+        }
+
+        const notifications = data.notifications || [];
+
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="info-item">
+                    <div class="info-icon">🔔</div>
+                    <div>
+                        <h4>No Notifications</h4>
+                        <p>You have no notifications yet.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = notifications.slice(0, 3).map(item => `
+    <div class="info-item"
+         onclick="markDashboardNotificationAsRead(${Number(item.notification_id)})"
+         style="cursor:pointer;">
+
+        <div class="info-icon">🔔</div>
+
+        <div>
+            <h4>${escapeNotificationHTML(item.title)}</h4>
+            <p>${escapeNotificationHTML(item.message)}</p>
+
+            <small style="color:${
+                Number(item.is_read) === 1 ? '#198754' : '#d97706'
+            }; font-weight:600;">
+                ${Number(item.is_read) === 1 ? "Read" : "Unread"}
+            </small>
+        </div>
+
+    </div>
+`).join("");
+
+    } catch (error) {
+        console.error("Recent notifications error:", error);
+        container.textContent = "Unable to load recent notifications.";
+    }
+}
+
+function escapeNotificationHTML(value) {
+    const element = document.createElement("div");
+    element.textContent = value ?? "";
+    return element.innerHTML;
+}
+
+async function markDashboardNotificationAsRead(notificationId) {
+
+    const currentUser = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    if (!currentUser || !currentUser.user_id) {
+        alert("Please login again.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `http://127.0.0.1:5000/student/notifications/${notificationId}/read`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    user_id: currentUser.user_id
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to mark notification as read.");
+        }
+
+        window.location.assign(
+            window.location.pathname.replace(
+                "student-dashboard.html",
+                "student-notifications.html"
+            ) + "?id=" + notificationId
+        );
+
+    } catch (error) {
+        console.error("Dashboard notification error:", error);
+        alert(error.message);
+    }
+}
+
 function showMessage(section) {
     alert(section + " module will be connected soon.");
 }
@@ -851,6 +1145,90 @@ function logout() {
     localStorage.removeItem("loggedInUser");
     window.location.href = "index.html";
 }
+
+// Load Student Profile Picture in Sidebar
+async function loadSidebarProfilePicture() {
+
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    if (!user || !user.user_id) {
+        return;
+    }
+
+    const image = document.getElementById("sidebarProfileImage");
+    const initial = document.getElementById("sidebarProfileInitial");
+    const nameElement = document.getElementById("sidebarStudentName");
+
+    const name = user.full_name || "Student";
+
+    nameElement.textContent = name;
+    initial.textContent = name.charAt(0).toUpperCase();
+
+    image.src =
+        `http://127.0.0.1:5000/student/profile-picture/${user.user_id}?t=${Date.now()}`;
+
+    image.onload = function() {
+        image.style.display = "block";
+        initial.style.display = "none";
+    };
+
+    image.onerror = function() {
+        image.style.display = "none";
+        initial.style.display = "grid";
+    };
+}
+
+async function loadNotificationCount() {
+
+    const badge = document.getElementById("notificationCount");
+
+    const user = JSON.parse(
+        localStorage.getItem("loggedInUser") || "null"
+    );
+
+    if (!badge || !user || !user.user_id) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/student/notifications/${user.user_id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error("Failed to load notifications");
+        }
+
+        const notifications = data.notifications || [];
+
+        const unreadCount = notifications.filter(
+            item => Number(item.is_read) === 0
+        ).length;
+
+        badge.textContent = unreadCount;
+        badge.style.display = unreadCount > 0 ? "inline-block" : "none";
+
+        const notificationStat = document.getElementById("notifications");
+
+         if (notificationStat) {
+            notificationStat.textContent = notifications.length;
+    }
+
+    } catch (error) {
+        console.error("Notification count error:", error);
+    }
+}
+
+    loadNotificationCount();
+    loadMedicalRecordCount();
+    loadMedicalSubmissionStatus();
+    loadRecentNotifications();
+    loadSidebarProfilePicture();
+
 </script>
 
 </body>

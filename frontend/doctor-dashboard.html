@@ -13,8 +13,14 @@
             font-family: Arial, sans-serif;
         }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 20px;
+        }
+
         body {
             display: flex;
+            min-height: 100vh;
             background: #f4f7fc;
             color: #1b2b45;
         }
@@ -22,6 +28,7 @@
         .sidebar {
             width: 250px;
             min-height: 100vh;
+            flex-shrink: 0;
             background: #0b2a5b;
             color: white;
             padding: 25px 18px;
@@ -61,6 +68,8 @@
 
         .main {
             flex: 1;
+            min-width: 0;
+            min-height: calc(100vh + 400px);
             padding: 35px;
         }
 
@@ -126,6 +135,7 @@
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+            scroll-margin-top: 20px;
         }
 
         .panel h2 {
@@ -222,73 +232,55 @@
 </head>
 
 <body>
-
     <aside class="sidebar">
-
         <h2>ITUM Medical</h2>
         <p>Doctor Portal</p>
 
         <p class="menu-title">MAIN MENU</p>
 
         <nav class="menu">
-            <a href="#" class="active">▦ &nbsp; Dashboard</a>
-            <a href="#appointments">▣ &nbsp; Appointment Requests</a>
+            <a href="#dashboard" class="active">▦ &nbsp; Dashboard</a>
+            <a href="#appointments" onclick="goToAppointments(event)">▣ &nbsp; Appointment Requests</a>
             <a href="#">▤ &nbsp; Patient Records</a>
             <a href="doctor-medical-records.html">✚ &nbsp; Medical Records</a>
-            <a href="doctor-medical-submissions.html">
-               ▧ &nbsp; Medical Submissions
-            </a>
+            <a href="doctor-medical-submissions.html">▧ &nbsp; Medical Submissions</a>
             <a href="#">♧ &nbsp; Notifications</a>
         </nav>
 
-        <a href="#" class="logout" onclick="logout()">↪ &nbsp; Logout</a>
-
+        <a href="#" class="logout" onclick="logout(); return false;">↪ &nbsp; Logout</a>
     </aside>
 
-
     <main class="main">
-
         <header class="topbar">
             <h1>Doctor Dashboard</h1>
-
             <div class="doctor-info">
                 👨‍⚕️ <span id="doctorName">Doctor</span>
             </div>
         </header>
 
-
-        <section class="welcome">
+        <section class="welcome" id="dashboard">
             <h2>Welcome, Doctor!</h2>
             <p>Manage your appointments and patient information.</p>
         </section>
 
-
         <section class="cards">
-
             <div class="card">
                 <h3>Total Appointments</h3>
                 <h1 id="totalAppointments">0</h1>
             </div>
-
             <div class="card">
                 <h3>Pending Requests</h3>
                 <h1 id="pendingAppointments">0</h1>
             </div>
-
             <div class="card">
                 <h3>Approved Appointments</h3>
                 <h1 id="approvedAppointments">0</h1>
             </div>
-
         </section>
 
-
         <section class="panel" id="appointments">
-
             <h2>Appointment Requests</h2>
-
             <div class="table-wrap">
-
                 <table>
                     <thead>
                         <tr>
@@ -300,204 +292,157 @@
                             <th>ACTION</th>
                         </tr>
                     </thead>
-
                     <tbody id="appointmentTable">
-
                         <tr>
-                            <td colspan="6" class="empty-row">
-                                No appointment requests available yet.
-                            </td>
+                            <td colspan="6" class="empty-row">Loading appointment requests...</td>
                         </tr>
-
                     </tbody>
                 </table>
-
             </div>
-
         </section>
-
     </main>
 
-
     <script>
-    const loggedInUser = JSON.parse(
-        localStorage.getItem("loggedInUser") || "null"
-    );
+        const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
 
-    if (!loggedInUser || loggedInUser.role !== "doctor") {
-        window.location.href = "index.html";
-    } else {
-        document.getElementById("doctorName").textContent =
-            loggedInUser.full_name;
+        if (!loggedInUser || loggedInUser.role !== "doctor") {
+            window.location.href = "index.html";
+        } else {
+            document.getElementById("doctorName").textContent = loggedInUser.full_name || "Doctor";
+            loadAppointments();
+        }
 
-        loadAppointments();
-    }
+        async function loadAppointments() {
+            const table = document.getElementById("appointmentTable");
 
-    // Load Doctor Appointments
-    async function loadAppointments() {
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/doctor/appointments/${loggedInUser.user_id}`
+                );
+                const data = await response.json();
 
-        const table = document.getElementById("appointmentTable");
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load appointments.");
+                }
 
-        try {
-            const response = await fetch(
-                `http://127.0.0.1:5000/doctor/appointments/${loggedInUser.user_id}`
-            );
+                const appointments = Array.isArray(data.appointments) ? data.appointments : [];
 
-            const data = await response.json();
+                document.getElementById("totalAppointments").textContent = appointments.length;
+                document.getElementById("pendingAppointments").textContent =
+                    appointments.filter(a => a.status === "pending").length;
+                document.getElementById("approvedAppointments").textContent =
+                    appointments.filter(a => a.status === "approved").length;
 
-            if (!response.ok) {
-                throw new Error(data.error || "Unable to load appointments.");
-            }
+                table.innerHTML = "";
 
-            const appointments = data.appointments;
+                if (appointments.length === 0) {
+                    table.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="empty-row">No appointment requests available yet.</td>
+                        </tr>
+                    `;
+                    return;
+                }
 
-            document.getElementById("totalAppointments").textContent =
-                appointments.length;
+                appointments.forEach(appointment => {
+                    const row = document.createElement("tr");
+                    const values = [
+                        appointment.student_name,
+                        appointment.appointment_date,
+                        appointment.appointment_time,
+                        appointment.reason,
+                        appointment.status
+                    ];
 
-            document.getElementById("pendingAppointments").textContent =
-                appointments.filter(a => a.status === "pending").length;
+                    values.forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value ?? "-";
+                        row.appendChild(cell);
+                    });
 
-            document.getElementById("approvedAppointments").textContent =
-                appointments.filter(a => a.status === "approved").length;
+                    const actionCell = document.createElement("td");
 
-            table.innerHTML = "";
+                    if (appointment.status === "pending") {
+                        const approveButton = document.createElement("button");
+                        approveButton.textContent = "Approve";
+                        approveButton.className = "approve";
+                        approveButton.addEventListener("click", () =>
+                            updateAppointmentStatus(appointment.appointment_id, "approved")
+                        );
 
-            if (appointments.length === 0) {
+                        const rejectButton = document.createElement("button");
+                        rejectButton.textContent = "Reject";
+                        rejectButton.className = "reject";
+                        rejectButton.addEventListener("click", () =>
+                            updateAppointmentStatus(appointment.appointment_id, "rejected")
+                        );
+
+                        actionCell.appendChild(approveButton);
+                        actionCell.appendChild(rejectButton);
+                    } else {
+                        actionCell.textContent = "Reviewed";
+                    }
+
+                    row.appendChild(actionCell);
+                    table.appendChild(row);
+                });
+            } catch (error) {
                 table.innerHTML = `
                     <tr>
-                        <td colspan="6" class="empty-row">
-                            No appointment requests available yet.
-                        </td>
+                        <td colspan="6" class="empty-row">${error.message}</td>
                     </tr>
                 `;
-                return;
+                console.error("Load appointments error:", error);
             }
-
-            appointments.forEach(appointment => {
-
-                const row = document.createElement("tr");
-
-                const values = [
-                    appointment.student_name,
-                    appointment.appointment_date,
-                    appointment.appointment_time,
-                    appointment.reason,
-                    appointment.status
-                ];
-
-                values.forEach(value => {
-                    const cell = document.createElement("td");
-                    cell.textContent = value;
-                    row.appendChild(cell);
-                });
-
-                const actionCell = document.createElement("td");
-
-                if (appointment.status === "pending") {
-
-                    const approveButton = document.createElement("button");
-                    approveButton.textContent = "Approve";
-                    approveButton.style.background = "#198754";
-                    approveButton.style.color = "white";
-                    approveButton.style.padding = "8px 12px";
-                    approveButton.style.border = "none";
-                    approveButton.style.borderRadius = "5px";
-                    approveButton.style.cursor = "pointer";
-
-                    approveButton.onclick = () =>
-                        updateAppointmentStatus(
-                            appointment.appointment_id,
-                            "approved"
-                        );
-
-                    const rejectButton = document.createElement("button");
-                    rejectButton.textContent = "Reject";
-                    rejectButton.style.background = "#dc3545";
-                    rejectButton.style.color = "white";
-                    rejectButton.style.padding = "8px 12px";
-                    rejectButton.style.border = "none";
-                    rejectButton.style.borderRadius = "5px";
-                    rejectButton.style.cursor = "pointer";
-                    rejectButton.style.marginLeft = "5px";
-
-                    rejectButton.onclick = () =>
-                        updateAppointmentStatus(
-                            appointment.appointment_id,
-                            "rejected"
-                        );
-
-                    actionCell.appendChild(approveButton);
-                    actionCell.appendChild(rejectButton);
-
-                } else {
-                    actionCell.textContent = "Reviewed";
-                }
-
-                row.appendChild(actionCell);
-                table.appendChild(row);
-            });
-
-        } catch (error) {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="6" class="empty-row">
-                        ${error.message}
-                    </td>
-                </tr>
-            `;
-
-            console.error(error);
         }
-    }
 
-
-    // Approve or Reject Appointment
-    async function updateAppointmentStatus(appointmentId, status) {
-
-        const confirmed = confirm(
-            "Are you sure you want to " + status + " this appointment?"
-        );
-
-        if (!confirmed) return;
-
-        try {
-            const response = await fetch(
-                `http://127.0.0.1:5000/appointments/${appointmentId}/status`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        status: status,
-                        user_id: loggedInUser.user_id
-                    })
-                }
+        async function updateAppointmentStatus(appointmentId, status) {
+            const confirmed = confirm(
+                "Are you sure you want to " + status + " this appointment?"
             );
 
-            const data = await response.json();
+            if (!confirmed) return;
 
-            if (!response.ok) {
-                throw new Error(data.error || "Status update failed.");
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/appointments/${appointmentId}/status`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            status: status,
+                            user_id: loggedInUser.user_id
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Status update failed.");
+                }
+
+                alert(data.message);
+                await loadAppointments();
+            } catch (error) {
+                alert(error.message);
+                console.error("Appointment status update error:", error);
             }
-
-            alert(data.message);
-
-            loadAppointments();
-
-        } catch (error) {
-            alert(error.message);
-            console.error(error);
         }
-    }
 
+        function goToAppointments(event) {
+            if (event) event.preventDefault();
+            const section = document.getElementById("appointments");
+            if (!section) return;
 
-    function logout() {
-        localStorage.removeItem("loggedInUser");
-        window.location.href = "index.html";
-    }
+            const targetTop = section.getBoundingClientRect().top + window.pageYOffset;
+            window.scrollTo({ top: targetTop, behavior: "smooth" });
+        }
 
-</script>
-
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+    </script>
 </body>
 </html>

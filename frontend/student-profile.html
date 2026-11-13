@@ -1,0 +1,820 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | ITUM Medical Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #26364d;
+        }
+
+        .topbar {
+            height: 75px;
+            background: #0b2a5b;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 45px;
+        }
+
+        .brand {
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .brand span {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            margin-top: 4px;
+            color: #c6d8f2;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            background: #1565d8;
+            padding: 11px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 25px;
+        }
+
+        .page-heading {
+            margin-bottom: 25px;
+        }
+
+        .page-heading h1 {
+            font-size: 27px;
+            color: #0b2a5b;
+            margin-bottom: 8px;
+        }
+
+        .page-heading p {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .profile-header {
+            background: linear-gradient(120deg, #0b2a5b, #1565d8);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            color: white;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(11, 42, 91, 0.12);
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            color: #1565d8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            font-weight: 800;
+            border: 4px solid #d9e8ff;
+            object-fit: cover;
+        }
+
+        .profile-header h2 {
+            font-size: 23px;
+            margin-bottom: 8px;
+        }
+
+        .profile-header p {
+            font-size: 13px;
+            color: #d9e8ff;
+            margin-bottom: 5px;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 7px;
+            background: #d9fbe9;
+            color: #087443;
+            padding: 6px 13px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .profile-actions {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 11px 17px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .edit-btn {
+            background: white;
+            color: #0b2a5b;
+        }
+
+        .upload-btn {
+            background: #d9e8ff;
+            color: #0b2a5b;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 13px;
+            border: 1px solid #e7edf5;
+            box-shadow: 0 4px 15px rgba(20, 50, 90, 0.04);
+        }
+
+        .card h3 {
+            color: #0b2a5b;
+            font-size: 16px;
+            margin-bottom: 22px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #edf1f6;
+        }
+
+        .detail {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 19px;
+            font-size: 12px;
+        }
+
+        .detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail label {
+            color: #8290a5;
+        }
+
+        .detail strong {
+            color: #26364d;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .edit-card {
+            background: white;
+            padding: 27px;
+            border-radius: 13px;
+            border: 1px solid #e7edf5;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(20, 50, 90, 0.04);
+        }
+
+        .edit-card h3 {
+            color: #0b2a5b;
+            font-size: 17px;
+            margin-bottom: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            color: #52627a;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dce4ef;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+            color: #26364d;
+        }
+
+        .form-group input:focus {
+            border-color: #1565d8;
+            box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.08);
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .save-btn {
+            background: #1565d8;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #e9eef6;
+            color: #34445c;
+        }
+
+        .footer {
+            text-align: center;
+            color: #8a97a9;
+            font-size: 11px;
+            margin: 35px 0 20px;
+        }
+
+        #message {
+            text-align: center;
+            padding: 15px;
+            color: #1565d8;
+            font-size: 13px;
+        }
+
+        #actionMessage {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        @media(max-width: 650px) {
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .brand {
+                font-size: 14px;
+            }
+
+            .container {
+                margin-top: 25px;
+                padding: 0 15px;
+            }
+
+            .cards,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header {
+                padding: 20px;
+                flex-wrap: wrap;
+            }
+
+            .avatar {
+                width: 75px;
+                height: 75px;
+                font-size: 27px;
+            }
+
+            .profile-header h2 {
+                font-size: 18px;
+            }
+
+            .profile-actions {
+                width: 100%;
+                margin-left: 0;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        ITUM MEDICAL CENTER
+        <span>MANAGEMENT SYSTEM</span>
+    </div>
+
+    <a href="student-dashboard.html" class="back-btn">
+        ← Dashboard
+    </a>
+</header>
+
+<main class="container">
+
+    <div class="page-heading">
+        <h1>My Profile</h1>
+        <p>View and manage your personal and academic information.</p>
+    </div>
+
+    <div id="message">Loading profile information...</div>
+    <div id="actionMessage"></div>
+
+    <div id="profileContent" style="display:none;">
+
+        <section class="profile-header">
+
+            <div class="avatar-wrapper">
+                <img
+                    id="profileImage"
+                    class="avatar"
+                    alt="Profile Picture"
+                    style="display:none;"
+                >
+
+                <div class="avatar" id="avatar">S</div>
+            </div>
+
+            <div>
+                <h2 id="fullName">Student Name</h2>
+                <p id="username">@username</p>
+                <p id="registration">Registration Number</p>
+                <span class="status">● Student Account</span>
+            </div>
+
+            <div class="profile-actions">
+                <button class="action-btn edit-btn" onclick="showEditForm()">
+                    ✏ Edit Profile
+                </button>
+
+                <button class="action-btn upload-btn" onclick="selectProfilePicture()">
+                    📷 Change Picture
+                </button>
+            </div>
+
+        </section>
+
+        <input
+            type="file"
+            id="profilePictureInput"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            hidden
+            onchange="uploadProfilePicture()"
+        >
+
+        <section class="edit-card" id="editForm" style="display:none;">
+
+            <h3>✏ Edit Personal Information</h3>
+
+            <form onsubmit="updateProfile(event)">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editFullName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input
+                            type="email"
+                            id="editEmail"
+                            placeholder="example@gmail.com"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input
+                            type="tel"
+                            id="editContactNumber"
+                            placeholder="07XXXXXXXX"
+                            maxlength="10"
+                            minlength="10"
+                            pattern="[0-9]{10}"
+                            inputmode="numeric"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
+                            title="Contact number must contain exactly 10 digits."
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Division</label>
+                        <input type="text" id="editDivision">
+                    </div>
+
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="action-btn save-btn">
+                        Save Changes
+                    </button>
+
+                    <button
+                        type="button"
+                        class="action-btn cancel-btn"
+                        onclick="hideEditForm()"
+                    >
+                        Cancel
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+
+        <section class="cards">
+
+            <div class="card">
+                <h3>👤 Personal Information</h3>
+
+                <div class="detail">
+                    <label>Full Name</label>
+                    <strong id="personalName">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Username</label>
+                    <strong id="personalUsername">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Email Address</label>
+                    <strong id="email">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Account Role</label>
+                    <strong id="role">-</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎓 Academic Information</h3>
+
+                <div class="detail">
+                    <label>Registration Number</label>
+                    <strong id="regNumber">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Student Type</label>
+                    <strong id="patientType">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Division</label>
+                    <strong id="division">-</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📞 Contact Information</h3>
+
+                <div class="detail">
+                    <label>Email</label>
+                    <strong id="contactEmail">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Contact Number</label>
+                    <strong id="contactNumber">-</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🏥 Account Information</h3>
+
+                <div class="detail">
+                    <label>User ID</label>
+                    <strong id="userId">-</strong>
+                </div>
+
+                <div class="detail">
+                    <label>Account Type</label>
+                    <strong>Student</strong>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+
+    <div class="footer">
+        ITUM Medical Center Management System © 2026
+    </div>
+
+</main>
+
+<script>
+
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+
+    let currentProfile = null;
+
+    function showActionMessage(message, success = true) {
+
+        const box = document.getElementById("actionMessage");
+
+        box.textContent = message;
+        box.style.display = "block";
+        box.style.background = success ? "#d9fbe9" : "#ffe2e2";
+        box.style.color = success ? "#087443" : "#c62828";
+    }
+
+    async function loadProfile() {
+
+        const message = document.getElementById("message");
+
+        if (!user || !user.user_id) {
+            message.textContent = "Please login to view your profile.";
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                `http://127.0.0.1:5000/student/profile/${user.user_id}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Unable to load profile.");
+            }
+
+            currentProfile = data.profile;
+
+            displayProfile(currentProfile);
+
+            message.style.display = "none";
+            document.getElementById("profileContent").style.display = "block";
+
+            loadProfilePicture();
+
+        } catch (error) {
+
+            message.textContent = error.message;
+            message.style.color = "#dc3545";
+
+        }
+    }
+
+    function displayProfile(profile) {
+
+        document.getElementById("fullName").textContent =
+            profile.full_name || "-";
+
+        document.getElementById("username").textContent =
+            "@" + (profile.username || "-");
+
+        document.getElementById("registration").textContent =
+            profile.registration_number || "No registration number";
+
+        document.getElementById("avatar").textContent =
+            (profile.full_name || "S").charAt(0).toUpperCase();
+
+        document.getElementById("personalName").textContent =
+            profile.full_name || "-";
+
+        document.getElementById("personalUsername").textContent =
+            profile.username || "-";
+
+        document.getElementById("email").textContent =
+            profile.email || "-";
+
+        document.getElementById("role").textContent =
+            profile.role || "-";
+
+        document.getElementById("regNumber").textContent =
+            profile.registration_number || "-";
+
+        document.getElementById("patientType").textContent =
+            profile.patient_type || "-";
+
+        document.getElementById("division").textContent =
+            profile.division || "Not provided";
+
+        document.getElementById("contactEmail").textContent =
+            profile.email || "-";
+
+        document.getElementById("contactNumber").textContent =
+            profile.contact_number || "Not provided";
+
+        document.getElementById("userId").textContent =
+            profile.user_id || "-";
+    }
+
+    function loadProfilePicture() {
+
+        const image = document.getElementById("profileImage");
+        const avatar = document.getElementById("avatar");
+
+        image.style.display = "none";
+        avatar.style.display = "flex";
+
+        image.onload = function () {
+            image.style.display = "block";
+            avatar.style.display = "none";
+        };
+
+        image.onerror = function () {
+            image.style.display = "none";
+            avatar.style.display = "flex";
+        };
+
+        image.src =
+            `http://127.0.0.1:5000/student/profile-picture/${user.user_id}?t=${Date.now()}`;
+    }
+
+    function showEditForm() {
+
+        if (!currentProfile) return;
+
+        document.getElementById("editFullName").value =
+            currentProfile.full_name || "";
+
+        document.getElementById("editEmail").value =
+            currentProfile.email || "";
+
+        document.getElementById("editContactNumber").value =
+            currentProfile.contact_number || "";
+
+        document.getElementById("editDivision").value =
+            currentProfile.division || "";
+
+        document.getElementById("editForm").style.display = "block";
+
+        document.getElementById("editForm").scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+
+    function hideEditForm() {
+
+        document.getElementById("editForm").style.display = "none";
+
+    }
+
+    async function updateProfile(event) {
+
+        event.preventDefault();
+
+        const updatedData = {
+
+            full_name: document.getElementById("editFullName").value.trim(),
+
+            email: document.getElementById("editEmail").value.trim(),
+
+            contact_number: document.getElementById("editContactNumber").value.trim(),
+
+            division: document.getElementById("editDivision").value.trim()
+
+        };
+
+        try {
+
+            const response = await fetch(
+                `http://127.0.0.1:5000/student/profile/${user.user_id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(updatedData)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Profile update failed.");
+            }
+
+            currentProfile = {
+                ...currentProfile,
+                ...updatedData
+            };
+
+            displayProfile(currentProfile);
+
+            hideEditForm();
+
+            showActionMessage("Profile updated successfully!");
+
+        } catch (error) {
+
+            showActionMessage(error.message, false);
+
+        }
+    }
+
+    function selectProfilePicture() {
+
+        document.getElementById("profilePictureInput").click();
+
+    }
+
+    async function uploadProfilePicture() {
+
+        const input = document.getElementById("profilePictureInput");
+
+        if (!input.files || input.files.length === 0) {
+            return;
+        }
+
+        const file = input.files[0];
+
+        const allowedTypes = ["image/jpeg", "image/png"];
+
+        if (!allowedTypes.includes(file.type)) {
+
+            showActionMessage(
+                "Please select a JPG, JPEG or PNG image.",
+                false
+            );
+
+            input.value = "";
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("profile_picture", file);
+
+        try {
+
+            const response = await fetch(
+                `http://127.0.0.1:5000/student/profile/${user.user_id}/picture`,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Picture upload failed.");
+            }
+
+            loadProfilePicture();
+
+            showActionMessage("Profile picture uploaded successfully!");
+
+        } catch (error) {
+
+            showActionMessage(error.message, false);
+
+        }
+
+        input.value = "";
+
+    }
+
+    loadProfile();
+
+</script>
+
+</body>
+</html>

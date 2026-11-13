@@ -27,6 +27,17 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
+# Student Profile Picture Upload Settings
+
+PROFILE_PICTURE_FOLDER = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "profile_pictures"
+)
+
+os.makedirs(PROFILE_PICTURE_FOLDER, exist_ok=True)
+
+ALLOWED_PROFILE_EXTENSIONS = {"jpg", "jpeg", "png"}
+
 
 def allowed_file(filename):
     return (
@@ -217,6 +228,56 @@ def login():
     finally:
         if cursor:
             cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/student/profile/<int:user_id>", methods=["GET"])
+def get_student_profile(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.full_name,
+                u.username,
+                u.email,
+                u.role,
+                p.patient_type,
+                p.registration_number,
+                p.division,
+                p.contact_number
+            FROM users u
+            LEFT JOIN patients p
+                ON u.user_id = p.user_id
+            WHERE u.user_id = %s
+        """, (user_id,))
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "error": "Student profile not found."
+            }), 404
+
+        return jsonify({
+            "profile": user
+        }), 200
+
+    except mysql.connector.Error as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
         if connection and connection.is_connected():
             connection.close()
 
@@ -491,9 +552,9 @@ def get_doctor_appointments(user_id):
 
         if connection and connection.is_connected():
             connection.close()
-
+            
 @app.route("/appointments/<int:appointment_id>/status", methods=["PUT"])
-def update_appointment_status(appointment_id): 
+def update_appointment_status(appointment_id):
 
     data = request.get_json(silent=True) or {}
     new_status = data.get("status", "").strip().lower()
@@ -526,7 +587,7 @@ def update_appointment_status(appointment_id):
 
         # Check appointment belongs to this doctor
         cursor.execute("""
-            SELECT status
+            SELECT status, patient_id
             FROM appointments
             WHERE appointment_id = %s
             AND doctor_id = %s
@@ -550,11 +611,46 @@ def update_appointment_status(appointment_id):
             AND doctor_id = %s
         """, (new_status, appointment_id, doctor["doctor_id"]))
 
+        # Get student user ID
+        cursor.execute("""
+            SELECT user_id
+            FROM patients
+            WHERE patient_id = %s
+        """, (appointment["patient_id"],))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            connection.rollback()
+            return jsonify({"error": "Patient not found."}), 404
+
+        # Create notification
+        title = "Appointment " + new_status.capitalize()
+
+        message = (
+            "Your appointment has been "
+            + new_status
+            + " by the doctor."
+        )
+
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            patient["user_id"],
+            title,
+            message,
+            "appointment",
+            0
+        ))
+
         connection.commit()
 
         return jsonify({
             "message": "Appointment " + new_status + " successfully!",
-            "status": new_status
+            "status": new_status,
+            "notification": "Notification created successfully."
         }), 200
 
     except mysql.connector.Error as error:
@@ -568,7 +664,7 @@ def update_appointment_status(appointment_id):
             cursor.close()
 
         if connection and connection.is_connected():
-            connection.close()      
+            connection.close()
 
         # Create Medical Record
 @app.route("/medical-records", methods=["POST"])
@@ -1125,9 +1221,10 @@ def update_medical_submission_status(submission_id):
             return jsonify({"message": "Doctor not found"}), 403
 
         cursor.execute("""
-            SELECT status FROM medical_submissions
+            SELECT status, patient_id
+            FROM medical_submissions
             WHERE submission_id = %s
-        """, (submission_id,))
+""", (submission_id,))
 
         submission = cursor.fetchone()
 
@@ -1151,6 +1248,40 @@ def update_medical_submission_status(submission_id):
             status,
             doctor_remarks,
             submission_id
+        ))
+
+                # Get student user ID
+        cursor.execute("""
+            SELECT user_id
+            FROM patients
+            WHERE patient_id = %s
+        """, (submission["patient_id"],))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            connection.rollback()
+            return jsonify({"message": "Patient not found"}), 404
+
+        # Create notification
+        title = "Medical Submission " + status.capitalize()
+
+        message = (
+            "Your medical submission has been "
+            + status
+            + " by the doctor."
+        )
+
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            patient["user_id"],
+            title,
+            message,
+            "medical_submission",
+            0
         ))
 
         connection.commit()
@@ -1292,6 +1423,333 @@ def view_student_medical_certificate(submission_id):
             cursor.close()
 
         if connection:
+            connection.close()
+
+@app.route("/student/notifications/<int:user_id>", methods=["GET"])
+def get_student_notifications(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT notification_id,
+                   title,
+                   message,
+                   notification_type,
+                   is_read,
+                   created_at
+            FROM notifications
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (user_id,))
+
+        notifications = cursor.fetchall()
+
+        return jsonify({
+            "notifications": notifications
+        }), 200
+
+    except mysql.connector.Error as error:
+        print("Notification Error:", error)
+        return jsonify({
+            "error": "Unable to load notifications."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close() 
+
+@app.route("/student/notifications/<int:notification_id>/read", methods=["PUT"])
+def mark_notification_as_read(notification_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get("user_id")
+
+        if not user_id:
+            return jsonify({
+                "error": "User ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Check whether notification belongs to this user
+        cursor.execute("""
+            SELECT notification_id
+            FROM notifications
+            WHERE notification_id = %s
+            AND user_id = %s
+        """, (notification_id, user_id))
+
+        notification = cursor.fetchone()
+
+        if not notification:
+            return jsonify({
+                "error": "Notification not found."
+            }), 404
+
+        # Mark as read
+        cursor.execute("""
+            UPDATE notifications
+            SET is_read = 1
+            WHERE notification_id = %s
+            AND user_id = %s
+        """, (notification_id, user_id))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Notification marked as read."
+        }), 200
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+
+        return jsonify({"error": str(error)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+            
+@app.route("/student/profile/<int:user_id>/picture", methods=["POST"])
+def upload_student_profile_picture(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        if "profile_picture" not in request.files:
+            return jsonify({
+                "error": "No profile picture selected."
+            }), 400
+
+        file = request.files["profile_picture"]
+
+        if file.filename == "":
+            return jsonify({
+                "error": "Please select a picture."
+            }), 400
+
+        extension = file.filename.rsplit(".", 1)[-1].lower()
+
+        if "." not in file.filename or extension not in ALLOWED_PROFILE_EXTENSIONS:
+            return jsonify({
+                "error": "Only JPG, JPEG and PNG images are allowed."
+            }), 400
+
+        unique_filename = str(uuid.uuid4()) + "." + extension
+
+        saved_file_path = os.path.join(
+            PROFILE_PICTURE_FOLDER,
+            unique_filename
+        )
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT patient_id
+            FROM patients
+            WHERE user_id = %s
+        """, (user_id,))
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            return jsonify({
+                "error": "Student record not found."
+            }), 404
+
+        file.save(saved_file_path)
+
+        relative_path = "profile_pictures/" + unique_filename
+
+        cursor.execute("""
+            UPDATE patients
+            SET profile_picture = %s
+            WHERE user_id = %s
+        """, (relative_path, user_id))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Profile picture uploaded successfully!",
+            "profile_picture": relative_path
+        }), 200
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    except Exception as error:
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close() 
+
+@app.route("/student/profile-picture/<int:user_id>", methods=["GET"])
+def get_student_profile_picture(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT profile_picture
+            FROM patients
+            WHERE user_id = %s
+        """, (user_id,))
+
+        patient = cursor.fetchone()
+
+        if not patient or not patient["profile_picture"]:
+            return jsonify({
+                "error": "Profile picture not found."
+            }), 404
+
+        return send_from_directory(
+            PROFILE_PICTURE_FOLDER,
+            os.path.basename(patient["profile_picture"])
+        )
+
+    except mysql.connector.Error as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()      
+
+@app.route("/student/profile/<int:user_id>", methods=["PUT"])
+def update_student_profile(user_id):
+
+    data = request.get_json(silent=True) or {}
+
+    full_name = data.get("full_name", "").strip()
+    email = data.get("email", "").strip()
+    contact_number = data.get("contact_number", "").strip()
+    division = data.get("division", "").strip()
+
+        # Validate email address
+    import re
+
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return jsonify({
+            "error": "Please enter a valid email address."
+        }), 400
+
+    # Validate contact number
+    if contact_number and (
+        not contact_number.isdigit() or len(contact_number) != 10
+    ):
+        return jsonify({
+            "error": "Contact number must contain exactly 10 digits."
+        }), 400
+
+
+    if not full_name or not email:
+        return jsonify({
+            "error": "Full name and email are required."
+        }), 400
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Check whether the student account exists
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'student'
+        """, (user_id,))
+
+        student = cursor.fetchone()
+
+        if not student:
+            return jsonify({
+                "error": "Student account not found."
+            }), 404
+
+        # Update user information
+        cursor.execute("""
+            UPDATE users
+            SET full_name = %s,
+                email = %s
+            WHERE user_id = %s
+        """, (full_name, email, user_id))
+
+        # Update patient information
+        cursor.execute("""
+            UPDATE patients
+            SET contact_number = %s,
+                division = %s
+            WHERE user_id = %s
+        """, (
+            contact_number or None,
+            division or None,
+            user_id
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Profile updated successfully!"
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
             connection.close()
 
 if __name__ == "__main__":

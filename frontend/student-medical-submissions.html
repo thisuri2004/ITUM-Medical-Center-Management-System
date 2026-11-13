@@ -181,11 +181,14 @@
 
     const message = document.getElementById("message");
 
-    if (!user || !["student", "staff"].includes(user.role)) {
-        window.location.href = "index.html";
-    } else {
-        loadSubmissions();
-    }
+   const urlParams = new URLSearchParams(window.location.search);
+const selectedSubmissionId = urlParams.get("id");
+
+if (!user || !["student", "staff"].includes(user.role)) {
+    window.location.href = "index.html";
+} else {
+    loadSubmissions();
+}
 
     async function loadSubmissions() {
         try {
@@ -209,7 +212,23 @@
                 return;
             }
 
-            submissionsContainer.innerHTML = data.submissions.map(item => {
+const filteredSubmissions = selectedSubmissionId
+    ? data.submissions.filter(item =>
+        String(item.submission_id) === selectedSubmissionId
+      )
+    : data.submissions;
+
+if (filteredSubmissions.length === 0) {
+    submissionsContainer.innerHTML = `
+        <div class="empty">
+            <h3>Medical Submission Not Found</h3>
+            <p>The selected medical submission could not be found.</p>
+        </div>
+    `;
+    return;
+}
+
+submissionsContainer.innerHTML = filteredSubmissions.map(item => {
 
                 const statusClass = item.status.toLowerCase();
 

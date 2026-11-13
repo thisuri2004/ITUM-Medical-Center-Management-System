@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Notifications | ITUM Medical Center</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #24344d;
+        }
+
+        .header {
+            background: #0b2a5b;
+            color: white;
+            padding: 22px 35px;
+        }
+
+        .header h2 {
+            margin-bottom: 6px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: #0b4f94;
+            color: white;
+            padding: 11px 18px;
+            border-radius: 7px;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: #1565d8;
+        }
+
+        .notification {
+            background: white;
+            padding: 22px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #1565d8;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .notification h3 {
+            color: #0b2a5b;
+            margin-bottom: 9px;
+        }
+
+        .notification p {
+            color: #52627a;
+            line-height: 1.6;
+        }
+
+        .notification small {
+            display: block;
+            margin-top: 12px;
+            color: #8995a7;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .read {
+            color: #2e7d32;
+        }
+
+        .unread {
+            color: #d97706;
+        }
+
+        .mark-btn {
+            background: #1565d8;
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .mark-btn:hover {
+            background: #0b4f94;
+        }
+
+        .empty {
+            background: white;
+            padding: 45px 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: #718096;
+        }
+
+        .error {
+            color: #c62828;
+            margin-bottom: 15px;
+        }
+
+        @media(max-width: 600px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>ITUM Medical Center</h2>
+        <p>Student Notification Center</p>
+    </div>
+
+    <div class="container">
+
+        <div class="topbar">
+            <div>
+                <h2>My Notifications</h2>
+                <p>View your latest updates and messages.</p>
+            </div>
+
+            <a href="student-dashboard.html" class="back-btn">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        <div id="errorMessage" class="error"></div>
+
+        <div id="notificationsList">
+            <div class="empty">Loading notifications...</div>
+        </div>
+
+    </div>
+
+    <script>
+
+        const user = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        async function loadNotifications() {
+
+            const list = document.getElementById("notificationsList");
+            const error = document.getElementById("errorMessage");
+
+            error.textContent = "";
+
+            if (!user || !user.user_id) {
+                list.innerHTML = `
+                    <div class="empty">
+                        Please login to view your notifications.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    `http://127.0.0.1:5000/student/notifications/${user.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "Failed to load notifications."
+                    );
+                }
+
+                const notifications = data.notifications || [];
+
+                // Get notification ID from URL
+                const urlParams = new URLSearchParams(
+                    window.location.search
+                );
+
+                const selectedId = urlParams.get("id");
+                alert("Selected Notification ID: " + selectedId);
+                console.log("Selected ID:", selectedId);
+                console.log("Available notifications:", notifications);
+
+                // Show selected notification or all notifications
+                const filteredNotifications = selectedId
+                    ? notifications.filter(item =>
+                        Number(item.notification_id) === Number(selectedId)
+                    )
+                    : notifications;
+
+                if (filteredNotifications.length === 0) {
+
+                    list.innerHTML = `
+                        <div class="empty">
+                            <h3>
+                                ${selectedId
+                                    ? "Notification Not Found"
+                                    : "No Notifications Yet"
+                                }
+                            </h3>
+
+                            <p>
+                                ${selectedId
+                                    ? "The selected notification could not be found."
+                                    : "You don't have any notifications at the moment."
+                                }
+                            </p>
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                // Display notifications
+                list.innerHTML = filteredNotifications.map(item => `
+
+                    <div class="notification">
+
+                        <h3>${escapeHTML(item.title)}</h3>
+
+                        <p>${escapeHTML(item.message)}</p>
+
+                        <small>
+                            ${escapeHTML(item.created_at || "")}
+                        </small>
+
+                        <p class="status ${
+                            Number(item.is_read) === 1
+                                ? "read"
+                                : "unread"
+                        }">
+
+                            ${
+                                Number(item.is_read) === 1
+                                    ? "Read"
+                                    : "Unread"
+                            }
+
+                        </p>
+
+                        ${
+                            Number(item.is_read) === 0
+                            ? `
+                                <button
+                                    class="mark-btn"
+                                    onclick="markAsRead(${Number(item.notification_id)})"
+                                >
+                                    Mark as Read
+                                </button>
+                            `
+                            : ""
+                        }
+
+                    </div>
+
+                `).join("");
+
+            } catch (err) {
+
+                console.error("Notification loading error:", err);
+
+                error.textContent = err.message;
+
+                list.innerHTML = `
+                    <div class="empty">
+                        Unable to load notifications.
+                    </div>
+                `;
+            }
+        }
+
+
+        // Mark notification as read
+        async function markAsRead(notificationId) {
+
+            try {
+
+                const response = await fetch(
+                    `http://127.0.0.1:5000/student/notifications/${notificationId}/read`,
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            user_id: user.user_id
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "Unable to mark as read."
+                    );
+                }
+
+                // Reload notifications after updating status
+                await loadNotifications();
+
+            } catch (error) {
+
+                console.error("Mark as read error:", error);
+
+                alert(error.message);
+            }
+        }
+
+
+        // Prevent HTML injection
+        function escapeHTML(value) {
+
+            const element = document.createElement("div");
+
+            element.textContent = value ?? "";
+
+            return element.innerHTML;
+        }
+
+
+        // Load notifications when page opens
+        loadNotifications();
+
+    </script>
+
+</body>
+</html>
