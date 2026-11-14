@@ -62,14 +62,18 @@ form.addEventListener("submit", async (e) => {
             return;
         }
 
-        // Check user role from database
-        if (data.user.role !== role) {
+       // Check user role from database
+const roleMatches = role === "student"
+    ? ["student", "staff"].includes(data.user.role)
+    : data.user.role === role;
 
-            errorBox.textContent =
-                "Selected user type does not match your account.";
+if (!roleMatches) {
 
-            return;
-        }
+    errorBox.textContent =
+        "Selected user type does not match your account.";
+
+    return;
+}
 
         // Save logged-in user details
         localStorage.setItem(

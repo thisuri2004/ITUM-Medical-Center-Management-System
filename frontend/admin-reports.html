@@ -1,0 +1,436 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Reports | ITUM Medical Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #263445;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background: #0b2a5b;
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 28px 18px;
+        }
+
+        .logo {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #d9e2ee;
+            text-decoration: none;
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #1565d8;
+            color: white;
+        }
+
+        .logout {
+            position: absolute;
+            bottom: 25px;
+            left: 18px;
+            right: 18px;
+            cursor: pointer;
+        }
+
+        .main {
+            margin-left: 250px;
+            padding: 35px;
+        }
+
+        .header {
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 27px;
+            color: #0b2a5b;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            color: #0b2a5b;
+            margin: 28px 0 18px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 23px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+        }
+
+        .stat-card p {
+            color: #718096;
+            font-size: 13px;
+            margin-bottom: 13px;
+        }
+
+        .stat-card h2 {
+            color: #0b2a5b;
+            font-size: 29px;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .report-card {
+            background: white;
+            padding: 25px;
+            border-radius: 13px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+        }
+
+        .report-card h3 {
+            color: #0b2a5b;
+            font-size: 17px;
+            margin-bottom: 23px;
+        }
+
+        .report-row {
+            margin-bottom: 20px;
+        }
+
+        .report-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 9px;
+            font-size: 13px;
+        }
+
+        .report-info span:first-child {
+            color: #52647a;
+            text-transform: capitalize;
+        }
+
+        .report-info strong {
+            color: #0b2a5b;
+        }
+
+        .progress {
+            width: 100%;
+            height: 9px;
+            background: #edf1f6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            width: 0;
+            transition: width 0.5s;
+        }
+
+        .approved-fill {
+            background: #20a56b;
+        }
+
+        .rejected-fill {
+            background: #e35b5b;
+        }
+
+        .pending-fill {
+            background: #e5ad36;
+        }
+
+        .accepted-fill {
+            background: #20a56b;
+        }
+
+        .records-box {
+            background: white;
+            padding: 25px;
+            border-radius: 13px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            margin-top: 20px;
+        }
+
+        .records-box p {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .records-box h2 {
+            color: #0b2a5b;
+            font-size: 32px;
+        }
+
+        .message {
+            text-align: center;
+            padding: 30px;
+            color: #718096;
+        }
+
+        @media(max-width: 1100px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media(max-width: 800px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .main {
+                margin-left: 200px;
+                padding: 20px;
+            }
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            ITUM<br>
+            Medical Center<br>
+            <small>Admin Panel</small>
+        </div>
+
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="admin-patients.html">Students & Staff</a>
+        <a href="admin-doctors.html">Doctors</a>
+        <a href="admin-appointments.html">Appointments</a>
+        <a href="admin-submissions.html">Medical Submissions</a>
+        <a href="admin-medical-records.html">Medical Records</a>
+        <a href="admin-notifications.html">Notifications</a>
+        <a href="admin-reports.html" class="active">Reports</a>
+
+        <a class="logout" onclick="logout()">Logout</a>
+    </aside>
+
+    <main class="main">
+
+        <div class="header">
+            <h1>Reports & Analytics</h1>
+            <p>Overview of ITUM Medical Center system activities.</p>
+        </div>
+
+        <h2 class="section-title">User Statistics</h2>
+
+        <div class="stats">
+            <div class="stat-card">
+                <p>Total Students</p>
+                <h2 id="totalStudents">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Staff</p>
+                <h2 id="totalStaff">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Doctors</p>
+                <h2 id="totalDoctors">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Medical Records</p>
+                <h2 id="totalRecords">0</h2>
+            </div>
+        </div>
+
+        <h2 class="section-title">System Activity Reports</h2>
+
+        <div class="reports-grid">
+
+            <div class="report-card">
+                <h3>Appointment Report</h3>
+                <div id="appointmentReport">
+                    <p class="message">Loading...</p>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <h3>Medical Submission Report</h3>
+                <div id="submissionReport">
+                    <p class="message">Loading...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="records-box">
+            <p>Total Medical Records Created</p>
+            <h2 id="recordsSummary">0</h2>
+        </div>
+
+    </main>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        if (!loggedInUser || loggedInUser.role !== "admin") {
+            window.location.href = "index.html";
+        }
+
+        async function loadReports() {
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/admin/reports?admin_user_id=${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load reports.");
+                }
+
+                // User statistics
+                document.getElementById("totalStudents").textContent =
+                    data.user_report.total_students ?? 0;
+
+                document.getElementById("totalStaff").textContent =
+                    data.user_report.total_staff ?? 0;
+
+                document.getElementById("totalDoctors").textContent =
+                    data.user_report.total_doctors ?? 0;
+
+                const totalRecords =
+                    data.medical_records_report.total_medical_records ?? 0;
+
+                document.getElementById("totalRecords").textContent =
+                    totalRecords;
+
+                document.getElementById("recordsSummary").textContent =
+                    totalRecords;
+
+                // Appointment report
+                displayReport(
+                    "appointmentReport",
+                    data.appointment_report || []
+                );
+
+                // Medical submission report
+                displayReport(
+                    "submissionReport",
+                    data.medical_submission_report || []
+                );
+
+            } catch (error) {
+                document.getElementById("appointmentReport").innerHTML =
+                    `<p class="message">${escapeHTML(error.message)}</p>`;
+
+                document.getElementById("submissionReport").innerHTML =
+                    `<p class="message">${escapeHTML(error.message)}</p>`;
+            }
+        }
+
+        function displayReport(containerId, reportData) {
+            const container = document.getElementById(containerId);
+
+            if (reportData.length === 0) {
+                container.innerHTML =
+                    '<p class="message">No report data available.</p>';
+                return;
+            }
+
+            const total = reportData.reduce(
+                (sum, item) => sum + Number(item.total || 0), 0
+            );
+
+            container.innerHTML = reportData.map(item => {
+                const status = String(item.status || "unknown").toLowerCase();
+                const count = Number(item.total || 0);
+                const percentage = total > 0
+                    ? (count / total) * 100
+                    : 0;
+
+                let fillClass = status + "-fill";
+
+                if (!["approved", "rejected", "pending", "accepted"].includes(status)) {
+                    fillClass = "pending-fill";
+                }
+
+                return `
+                    <div class="report-row">
+                        <div class="report-info">
+                            <span>${escapeHTML(status)}</span>
+                            <strong>${count} (${percentage.toFixed(1)}%)</strong>
+                        </div>
+
+                        <div class="progress">
+                            <div class="progress-fill ${fillClass}"
+                                style="width:${percentage}%">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? "").replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[char]);
+        }
+
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+
+        loadReports();
+    </script>
+
+</body>
+</html>

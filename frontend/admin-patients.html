@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students & Staff | ITUM Medical Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background: #f3f6fb;
+            color: #26364a;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #0b2a5b;
+            color: white;
+            padding: 25px 15px;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            font-size: 19px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .brand span {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            margin-top: 7px;
+            color: #d9e2ee;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #1565d8;
+        }
+
+        .main {
+            flex: 1;
+            padding: 35px;
+            min-width: 0;
+        }
+
+        .header {
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            color: #0b2a5b;
+            font-size: 25px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .summary {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            flex: 1;
+            min-width: 150px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+        }
+
+        .summary-card p {
+            color: #718096;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .summary-card h2 {
+            color: #0b4f94;
+            font-size: 25px;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+        }
+
+        .panel h2 {
+            font-size: 17px;
+            margin-bottom: 18px;
+            color: #0b2a5b;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8edf4;
+            font-size: 12px;
+        }
+
+        th {
+            background: #f4f7fc;
+            color: #0b2a5b;
+            font-weight: 600;
+        }
+
+        td {
+            color: #526174;
+        }
+
+        .type {
+            background: #e8f1ff;
+            color: #1565d8;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+        }
+
+        .message {
+            text-align: center;
+            padding: 25px;
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .logout {
+            margin-top: 25px;
+            cursor: pointer;
+        }
+
+        @media(max-width: 750px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .main {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            ITUM MEDICAL CENTER
+            <span>Admin Management Panel</span>
+        </div>
+
+        <a href="admin-dashboard.html">🏠 Dashboard</a>
+        <a href="admin-patients.html" class="active">👨‍🎓 Students & Staff</a>
+        <a href="admin-doctors.html">🩺 Doctors</a>
+        <a href="admin-appointments.html">📅 Appointments</a>
+        <a href="admin-submissions.html">📄 Medical Submissions</a>
+        <a href="admin-medical-records.html">📋 Medical Records</a>
+        <a href="admin-notifications.html">🔔 Notifications</a>
+        <a href="admin-reports.html">📊 Reports</a>
+
+        <a class="logout" onclick="logout()">🚪 Logout</a>
+    </aside>
+
+    <main class="main">
+
+        <div class="header">
+            <h1>Students & Staff Management</h1>
+            <p>View and manage registered students and staff members.</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <p>Total Patients</p>
+                <h2 id="totalPatients">0</h2>
+            </div>
+
+            <div class="summary-card">
+                <p>Total Students</p>
+                <h2 id="totalStudents">0</h2>
+            </div>
+
+            <div class="summary-card">
+                <p>Total Staff</p>
+                <h2 id="totalStaff">0</h2>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Registered Students & Staff</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Full Name</th>
+                            <th>Registration Number</th>
+                            <th>Patient Type</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="patientsTableBody">
+                        <tr>
+                            <td colspan="4" class="message">Loading patient details...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        if (!loggedInUser || loggedInUser.role !== "admin") {
+            window.location.href = "index.html";
+        }
+
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+
+        async function loadPatients() {
+            const tableBody = document.getElementById("patientsTableBody");
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/admin/patients?admin_user_id=${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Failed to load patients");
+                }
+
+                const patients = data.patients || [];
+
+                document.getElementById("totalPatients").textContent =
+                    patients.length;
+
+                document.getElementById("totalStudents").textContent =
+                    patients.filter(p => p.patient_type === "student").length;
+
+                document.getElementById("totalStaff").textContent =
+                    patients.filter(p => p.patient_type === "staff").length;
+
+                if (patients.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="message">
+                                No patients found.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = patients.map(patient => `
+                    <tr>
+                        <td>${patient.patient_id ?? "-"}</td>
+                        <td>${patient.full_name ?? "-"}</td>
+                        <td>${patient.registration_number ?? "-"}</td>
+                        <td>
+                            <span class="type">
+                                ${patient.patient_type ?? "-"}
+                            </span>
+                        </td>
+                    </tr>
+                `).join("");
+
+            } catch (error) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="message">
+                            ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        if (loggedInUser && loggedInUser.role === "admin") {
+            loadPatients();
+        }
+    </script>
+
+</body>
+</html>

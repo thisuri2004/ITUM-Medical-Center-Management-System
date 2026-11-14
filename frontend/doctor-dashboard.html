@@ -228,6 +228,20 @@
                 gap: 15px;
             }
         }
+        .notification-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    margin-left: 8px;
+    background: #e53935;
+    color: white;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: bold;
+}
     </style>
 </head>
 
@@ -239,13 +253,33 @@
         <p class="menu-title">MAIN MENU</p>
 
         <nav class="menu">
-            <a href="#dashboard" class="active">▦ &nbsp; Dashboard</a>
-            <a href="#appointments" onclick="goToAppointments(event)">▣ &nbsp; Appointment Requests</a>
-            <a href="#">▤ &nbsp; Patient Records</a>
-            <a href="doctor-medical-records.html">✚ &nbsp; Medical Records</a>
-            <a href="doctor-medical-submissions.html">▧ &nbsp; Medical Submissions</a>
-            <a href="#">♧ &nbsp; Notifications</a>
-        </nav>
+    <a href="#dashboard" class="active">▦ &nbsp; Dashboard</a>
+
+    <a href="#appointments" onclick="goToAppointments(event)">
+        ▣ &nbsp; Appointment Requests
+    </a>
+
+    <a href="doctor-patient-records.html">
+        ▤ &nbsp; Patient Records
+    </a>
+
+    <a href="doctor-medical-records.html">
+        ✚ &nbsp; Medical Records
+    </a>
+
+    <a href="doctor-medical-submissions.html">
+        ▧ &nbsp; Medical Submissions
+    </a>
+
+    <a href="doctor-notifications.html">
+        ♧ &nbsp; Notifications
+        <span id="doctorNotificationBadge" class="notification-badge" style="display: none;">0</span>
+    </a>
+
+    <a href="doctor-profile.html">
+        👤 &nbsp; My Profile
+    </a>
+</nav>
 
         <a href="#" class="logout" onclick="logout(); return false;">↪ &nbsp; Logout</a>
     </aside>
@@ -310,6 +344,7 @@
         } else {
             document.getElementById("doctorName").textContent = loggedInUser.full_name || "Doctor";
             loadAppointments();
+            loadDoctorNotificationCount();
         }
 
         async function loadAppointments() {
@@ -437,6 +472,39 @@
 
             const targetTop = section.getBoundingClientRect().top + window.pageYOffset;
             window.scrollTo({ top: targetTop, behavior: "smooth" });
+        }
+
+                async function loadDoctorNotificationCount() {
+
+            const badge = document.getElementById("doctorNotificationBadge");
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/doctor/notifications/${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load notifications.");
+                }
+
+                const notifications = data.notifications || [];
+
+                const unreadCount = notifications.filter(
+                    item => Number(item.is_read) === 0
+                ).length;
+
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = "inline-flex";
+                } else {
+                    badge.style.display = "none";
+                }
+
+            } catch (error) {
+                console.error("Notification count error:", error);
+            }
         }
 
         function logout() {

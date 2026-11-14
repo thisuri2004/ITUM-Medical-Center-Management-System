@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | ITUM Medical Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        .sidebar {
+            position: fixed;
+            width: 250px;
+            height: 100vh;
+            background: #0b2a5b;
+            color: white;
+            padding: 28px 18px;
+        }
+
+        .brand {
+            font-size: 19px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .brand span {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: #cbd5e1;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #d9e2ee;
+            text-decoration: none;
+            padding: 14px;
+            margin-bottom: 8px;
+            border-radius: 9px;
+            font-size: 14px;
+        }
+
+        .sidebar a.active,
+        .sidebar a:hover {
+            background: #1565d8;
+            color: white;
+        }
+
+        .main {
+            margin-left: 250px;
+            padding: 35px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .topbar h1 {
+            font-size: 26px;
+            color: #0b2a5b;
+        }
+
+        .admin-info {
+            background: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: 0 3px 12px #00000008;
+        }
+
+        .welcome {
+            background: linear-gradient(120deg, #0b2a5b, #1565d8);
+            color: white;
+            padding: 28px;
+            border-radius: 15px;
+            margin-bottom: 28px;
+        }
+
+        .welcome h2 {
+            margin-bottom: 10px;
+        }
+
+        .welcome p {
+            color: #dbeafe;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            margin-bottom: 18px;
+            color: #0b2a5b;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 22px;
+            border-radius: 13px;
+            box-shadow: 0 3px 12px #00000008;
+            border: 1px solid #e8edf5;
+        }
+
+        .stat-card p {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card h2 {
+            color: #0b2a5b;
+            font-size: 29px;
+        }
+
+        .stat-icon {
+            font-size: 23px;
+            margin-bottom: 12px;
+        }
+
+        .message {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        .logout {
+            cursor: pointer;
+            border: none;
+            background: #dc2626;
+            color: white;
+            padding: 11px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1000px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 650px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                gap: 15px;
+                flex-direction: column;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+    <div class="brand">
+        ITUM MEDICAL CENTER
+        <span>Admin Management Panel</span>
+    </div>
+
+    <a href="admin-dashboard.html" class="active">🏠 Dashboard</a>
+    <a href="admin-patients.html">👨‍🎓 Students & Staff</a>
+    <a href="admin-doctors.html">🩺 Doctors</a>
+    <a href="admin-appointments.html">📅 Appointments</a>
+    <a href="admin-submissions.html">📄 Medical Submissions</a>
+    <a href="admin-medical-records.html">📋 Medical Records</a>
+    <a href="admin-notifications.html">🔔 Notifications</a>
+    <a href="admin-reports.html">📊 Reports</a>
+</aside>
+
+    <main class="main">
+
+        <div class="topbar">
+            <h1>Admin Dashboard</h1>
+            <div class="admin-info">
+                Administrator
+                <button class="logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <section class="welcome">
+            <h2>Welcome to ITUM Medical Center</h2>
+            <p>Manage users, doctors, appointments and medical activities from one place.</p>
+        </section>
+
+        <h3 class="section-title">System Overview</h3>
+
+        <section class="stats">
+
+            <div class="stat-card">
+                <div class="stat-icon">🎓</div>
+                <p>Total Students</p>
+                <h2 id="totalStudents">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <p>Total Staff</p>
+                <h2 id="totalStaff">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🩺</div>
+                <p>Total Doctors</p>
+                <h2 id="totalDoctors">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <p>Total Appointments</p>
+                <h2 id="totalAppointments">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <p>Pending Appointments</p>
+                <h2 id="pendingAppointments">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📄</div>
+                <p>Total Medical Submissions</p>
+                <h2 id="totalSubmissions">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🔔</div>
+                <p>Pending Submissions</p>
+                <h2 id="pendingSubmissions">0</h2>
+            </div>
+
+        </section>
+
+        <p class="message" id="statusMessage">Loading dashboard information...</p>
+
+    </main>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        if (!loggedInUser || loggedInUser.role !== "admin") {
+            window.location.href = "index.html";
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/admin/dashboard-stats?admin_user_id=${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load dashboard.");
+                }
+
+                const stats = data.statistics;
+
+                document.getElementById("totalStudents").textContent = stats.total_students;
+                document.getElementById("totalStaff").textContent = stats.total_staff;
+                document.getElementById("totalDoctors").textContent = stats.total_doctors;
+                document.getElementById("totalAppointments").textContent = stats.total_appointments;
+                document.getElementById("pendingAppointments").textContent = stats.pending_appointments;
+                document.getElementById("totalSubmissions").textContent = stats.total_submissions;
+                document.getElementById("pendingSubmissions").textContent = stats.pending_submissions;
+
+                document.getElementById("statusMessage").textContent =
+                    "Dashboard information loaded successfully.";
+
+            } catch (error) {
+                document.getElementById("statusMessage").textContent =
+                    error.message;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+
+        loadDashboardStats();
+    </script>
+
+</body>
+</html>

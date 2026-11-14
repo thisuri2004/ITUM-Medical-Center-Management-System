@@ -1,0 +1,402 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Records | ITUM Medical Center</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #26344a;
+        }
+
+        .header {
+            background: #0b2a5b;
+            color: white;
+            padding: 22px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h2 {
+            font-size: 21px;
+        }
+
+        .header p {
+            font-size: 13px;
+            margin-top: 5px;
+            color: #d9e2ee;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            background: white;
+            color: #0b2a5b;
+            padding: 11px 18px;
+            border-radius: 7px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 35px auto;
+            padding: 0 25px;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h1 {
+            color: #0b2a5b;
+            font-size: 27px;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .summary {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border-left: 5px solid #1565d8;
+        }
+
+        .summary span {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .summary h2 {
+            color: #0b2a5b;
+            font-size: 30px;
+            margin-top: 8px;
+        }
+
+        .records-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .panel-header h3 {
+            color: #0b2a5b;
+            font-size: 19px;
+        }
+
+        .search-box {
+            padding: 11px 14px;
+            width: 280px;
+            max-width: 100%;
+            border: 1px solid #d9e2ee;
+            border-radius: 7px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .search-box:focus {
+            border-color: #1565d8;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th {
+            background: #f0f4fa;
+            color: #3b5278;
+            text-align: left;
+            padding: 15px;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 16px 15px;
+            border-bottom: 1px solid #edf0f5;
+            font-size: 14px;
+        }
+
+        tr:hover td {
+            background: #f9fbff;
+        }
+
+        .patient-name {
+            font-weight: bold;
+            color: #0b2a5b;
+        }
+
+        .type {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .student {
+            background: #e5efff;
+            color: #1556a8;
+        }
+
+        .staff {
+            background: #e5f7ed;
+            color: #16834a;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 30px;
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .error {
+            color: #d93025;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 18px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .container {
+                padding: 0 15px;
+                margin-top: 25px;
+            }
+
+            .records-panel {
+                padding: 17px;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <div>
+            <h2>ITUM Medical Center</h2>
+            <p>Doctor Portal</p>
+        </div>
+
+        <a href="doctor-dashboard.html" class="back-btn">
+            ← Back to Dashboard
+        </a>
+    </header>
+
+    <main class="container">
+
+        <div class="page-title">
+            <h1>Patient Records</h1>
+            <p>View registered students and staff members.</p>
+        </div>
+
+        <div class="summary">
+            <span>Total Registered Patients</span>
+            <h2 id="totalPatients">0</h2>
+        </div>
+
+        <section class="records-panel">
+
+            <div class="panel-header">
+                <h3>All Patients</h3>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-box"
+                    placeholder="Search by name or registration number..."
+                    oninput="searchPatients()"
+                >
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Full Name</th>
+                            <th>Registration Number</th>
+                            <th>Patient Type</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="patientsTableBody">
+                        <tr>
+                            <td colspan="4" class="status-message">
+                                Loading patient records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        let allPatients = [];
+
+        async function loadPatients() {
+
+            const tableBody = document.getElementById("patientsTableBody");
+
+            try {
+
+                const response = await fetch(
+                    "http://127.0.0.1:5000/patients"
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to load patients.");
+                }
+
+                allPatients = data.patients || [];
+
+                document.getElementById("totalPatients").textContent =
+                    allPatients.length;
+
+                displayPatients(allPatients);
+
+            } catch (error) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="status-message error">
+                            ${error.message}
+                        </td>
+                    </tr>
+                `;
+
+            }
+        }
+
+        function displayPatients(patients) {
+
+            const tableBody = document.getElementById("patientsTableBody");
+
+            if (patients.length === 0) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="status-message">
+                            No patient records found.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+            tableBody.innerHTML = patients.map(patient => {
+
+                const patientType =
+                    (patient.patient_type || "").toLowerCase();
+
+                const typeClass =
+                    patientType === "student" ? "student" : "staff";
+
+                return `
+                    <tr>
+                        <td>${patient.patient_id}</td>
+
+                        <td class="patient-name">
+                            ${escapeHTML(patient.full_name)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(patient.registration_number)}
+                        </td>
+
+                        <td>
+                            <span class="type ${typeClass}">
+                                ${escapeHTML(patient.patient_type)}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+
+            }).join("");
+        }
+
+        function searchPatients() {
+
+            const searchValue = document
+                .getElementById("searchInput")
+                .value
+                .toLowerCase()
+                .trim();
+
+            const filteredPatients = allPatients.filter(patient => {
+
+                return (
+                    String(patient.patient_id).includes(searchValue) ||
+                    (patient.full_name || "").toLowerCase().includes(searchValue) ||
+                    (patient.registration_number || "").toLowerCase().includes(searchValue) ||
+                    (patient.patient_type || "").toLowerCase().includes(searchValue)
+                );
+
+            });
+
+            displayPatients(filteredPatients);
+        }
+
+        function escapeHTML(value) {
+
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        loadPatients();
+    </script>
+
+</body>
+</html>

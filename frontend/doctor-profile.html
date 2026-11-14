@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Profile | ITUM Medical Center</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #243247;
+        }
+
+        .header {
+            background: #0b2a5b;
+            color: white;
+            padding: 22px 35px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .profile-card {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+        }
+
+        h2 {
+            color: #0b2a5b;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 25px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #d9e2ee;
+            border-radius: 7px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        input:focus {
+            border-color: #1565d8;
+        }
+
+        input:disabled {
+            background: #edf1f7;
+            color: #68778b;
+        }
+
+        .buttons {
+            margin-top: 28px;
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .edit-btn, .save-btn {
+            background: #1565d8;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #e2e8f0;
+            color: #243247;
+        }
+
+        #message {
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        @media(max-width: 650px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2 style="color:white;">ITUM Medical Center</h2>
+        <p>Doctor Profile Management</p>
+    </div>
+
+    <div class="container">
+
+        <div class="profile-card">
+
+            <h2>My Profile</h2>
+            <p class="subtitle">View and manage your professional information.</p>
+
+            <form id="profileForm">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="full_name" disabled required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="username" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" disabled required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Specialization</label>
+                        <input type="text" id="specialization" disabled required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Qualification</label>
+                        <input type="text" id="qualification" disabled required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>License Number</label>
+                        <input type="text" id="license_number" disabled required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input type="tel" id="contact_number"
+                               maxlength="10" pattern="[0-9]{10}"
+                               disabled required>
+                    </div>
+
+                </div>
+
+                <div class="buttons">
+                    <button type="button" class="edit-btn" id="editButton"
+                            onclick="enableEditing()">Edit Profile</button>
+
+                    <button type="submit" class="save-btn" id="saveButton"
+                            style="display:none;">Save Changes</button>
+
+                    <button type="button" class="cancel-btn" id="cancelButton"
+                            style="display:none;" onclick="cancelEditing()">Cancel</button>
+                </div>
+
+            </form>
+
+            <p id="message"></p>
+
+        </div>
+
+    </div>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        if (!loggedInUser || loggedInUser.role !== "doctor") {
+            window.location.href = "index.html";
+        }
+
+        const fields = [
+            "full_name",
+            "username",
+            "email",
+            "specialization",
+            "qualification",
+            "license_number",
+            "contact_number"
+        ];
+
+        let originalProfile = {};
+
+        async function loadDoctorProfile() {
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/doctor/profile/${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load profile.");
+                }
+
+                originalProfile = data.profile;
+
+                fields.forEach(field => {
+                    document.getElementById(field).value =
+                        data.profile[field] ?? "";
+                });
+
+            } catch (error) {
+                document.getElementById("message").textContent = error.message;
+            }
+        }
+
+        function enableEditing() {
+            fields.forEach(field => {
+                if (field !== "username") {
+                    document.getElementById(field).disabled = false;
+                }
+            });
+
+            document.getElementById("editButton").style.display = "none";
+            document.getElementById("saveButton").style.display = "inline-block";
+            document.getElementById("cancelButton").style.display = "inline-block";
+            document.getElementById("message").textContent = "";
+        }
+
+        function cancelEditing() {
+            fields.forEach(field => {
+                document.getElementById(field).value =
+                    originalProfile[field] ?? "";
+                document.getElementById(field).disabled = true;
+            });
+
+            document.getElementById("editButton").style.display = "inline-block";
+            document.getElementById("saveButton").style.display = "none";
+            document.getElementById("cancelButton").style.display = "none";
+            document.getElementById("message").textContent = "";
+        }
+
+        document.getElementById("profileForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const updatedProfile = {};
+
+            fields.forEach(field => {
+                updatedProfile[field] =
+                    document.getElementById(field).value.trim();
+            });
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/doctor/profile/${loggedInUser.user_id}`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(updatedProfile)
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Profile update failed.");
+                }
+
+                document.getElementById("message").textContent = data.message;
+                document.getElementById("message").style.color = "green";
+
+                await loadDoctorProfile();
+
+                document.getElementById("editButton").style.display = "inline-block";
+                document.getElementById("saveButton").style.display = "none";
+                document.getElementById("cancelButton").style.display = "none";
+
+            } catch (error) {
+                document.getElementById("message").textContent = error.message;
+                document.getElementById("message").style.color = "red";
+            }
+        });
+
+        if (loggedInUser && loggedInUser.role === "doctor") {
+            loadDoctorProfile();
+        }
+    </script>
+
+</body>
+</html>

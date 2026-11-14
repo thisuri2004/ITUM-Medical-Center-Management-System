@@ -3,6 +3,7 @@ from flask_cors import CORS
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
+import re
 
 import os
 import uuid
@@ -196,7 +197,7 @@ def login():
         cursor.execute(
             """
             SELECT user_id, full_name, username,
-                   password_hash, role
+            password_hash, role, is_active
             FROM users
             WHERE username = %s
             """,
@@ -208,6 +209,12 @@ def login():
         if user and check_password_hash(
             user["password_hash"], password
         ):
+
+            if user["is_active"] == 0:
+                return jsonify({
+                    "error": "Your account has been deactivated. Please contact the administrator."
+                }), 403
+
             return jsonify({
                 "message": "Login successful!",
                 "user": {
@@ -217,7 +224,6 @@ def login():
                     "role": user["role"]
                 }
             }), 200
-
         return jsonify({
             "error": "Invalid username or password."
         }), 401
@@ -280,6 +286,158 @@ def get_student_profile(user_id):
 
         if connection and connection.is_connected():
             connection.close()
+
+@app.route("/doctor/profile/<int:user_id>", methods=["GET"])
+def get_doctor_profile(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.full_name,
+                u.username,
+                u.email,
+                u.role,
+                d.specialization,
+                d.qualification,
+                d.license_number,
+                d.contact_number
+            FROM users u
+            INNER JOIN doctors d
+                ON u.user_id = d.user_id
+            WHERE u.user_id = %s
+        """, (user_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({
+                "error": "Doctor profile not found."
+            }), 404
+
+        return jsonify({
+            "profile": doctor
+        }), 200
+
+    except mysql.connector.Error as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/doctor/profile/<int:user_id>", methods=["PUT"])
+def update_doctor_profile(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        full_name = data.get("full_name", "").strip()
+        email = data.get("email", "").strip()
+        specialization = data.get("specialization", "").strip()
+        qualification = data.get("qualification", "").strip()
+        license_number = data.get("license_number", "").strip()
+        contact_number = data.get("contact_number", "").strip()
+
+        if not all([
+            full_name,
+            email,
+            specialization,
+            qualification,
+            license_number,
+            contact_number
+        ]):
+            return jsonify({
+                "error": "All fields are required."
+            }), 400
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            return jsonify({
+                "error": "Please enter a valid email address."
+            }), 400
+
+        if not re.fullmatch(r"\d{10}", contact_number):
+            return jsonify({
+                "error": "Contact number must contain exactly 10 digits."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT user_id
+            FROM doctors
+            WHERE user_id = %s
+        """, (user_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({
+                "error": "Doctor profile not found."
+            }), 404
+
+        cursor.execute("""
+            UPDATE users
+            SET full_name = %s, email = %s
+            WHERE user_id = %s
+        """, (full_name, email, user_id))
+
+        cursor.execute("""
+            UPDATE doctors
+            SET specialization = %s,
+                qualification = %s,
+                license_number = %s,
+                contact_number = %s
+            WHERE user_id = %s
+        """, (
+            specialization,
+            qualification,
+            license_number,
+            contact_number,
+            user_id
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Doctor profile updated successfully."
+        }), 200
+
+    except mysql.connector.IntegrityError:
+        if connection:
+            connection.rollback()
+        return jsonify({
+            "error": "Email or license number already exists."
+        }), 409
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()     
 
       # Get All Doctors
 @app.route("/doctors", methods=["GET"])
@@ -373,9 +531,9 @@ def book_appointment():
                 "error": "Patient account not found."
             }), 404
 
-        # Check whether the selected doctor exists
+               # Check whether the selected doctor exists
         cursor.execute("""
-            SELECT doctor_id
+            SELECT doctor_id, user_id
             FROM doctors
             WHERE doctor_id = %s
         """, (doctor_id,))
@@ -387,6 +545,7 @@ def book_appointment():
                 "error": "Selected doctor not found."
             }), 404
 
+      
         # Save appointment
         cursor.execute("""
             INSERT INTO appointments
@@ -402,7 +561,22 @@ def book_appointment():
         ))
 
         appointment_id = cursor.lastrowid
+
+        # Create notification for the doctor
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            doctor["user_id"],
+            "New Appointment Request",
+            "You have received a new appointment request.",
+            "appointment",
+            0
+        ))
+
         connection.commit()
+
 
         return jsonify({
             "message": "Appointment request submitted successfully!",
@@ -502,15 +676,14 @@ def get_doctor_appointments(user_id):
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
-        # Check whether the user is a doctor
+         # Check whether the user is a doctor
         cursor.execute("""
-            SELECT doctor_id
+            SELECT doctor_id, user_id
             FROM doctors
             WHERE user_id = %s
         """, (user_id,))
 
         doctor = cursor.fetchone()
-
         if not doctor:
             return jsonify({"error": "Doctor account not found."}), 404
 
@@ -1466,6 +1639,64 @@ def get_student_notifications(user_id):
         if connection and connection.is_connected():
             connection.close() 
 
+
+@app.route("/doctor/notifications/<int:user_id>", methods=["GET"])
+def get_doctor_notifications(user_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Check whether the user is a doctor
+        cursor.execute("""
+            SELECT doctor_id
+            FROM doctors
+            WHERE user_id = %s
+        """, (user_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({
+                "error": "Doctor account not found."
+            }), 404
+
+        # Get doctor notifications
+        cursor.execute("""
+            SELECT notification_id,
+                   title,
+                   message,
+                   notification_type,
+                   is_read,
+                   created_at
+            FROM notifications
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (user_id,))
+
+        notifications = cursor.fetchall()
+
+        return jsonify({
+            "notifications": notifications
+        }), 200
+
+    except mysql.connector.Error as error:
+        print("Doctor Notification Error:", error)
+        return jsonify({
+            "error": "Unable to load notifications."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+
 @app.route("/student/notifications/<int:notification_id>/read", methods=["PUT"])
 def mark_notification_as_read(notification_id):
 
@@ -1739,6 +1970,1046 @@ def update_student_profile(user_id):
 
         if connection:
             connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+       # ==============================
+             # ADMIN SIDE API
+       # ==============================     
+@app.route("/admin/doctors", methods=["POST"])
+def admin_register_doctor():
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json()
+
+        admin_user_id = data.get("admin_user_id")
+        full_name = data.get("full_name", "").strip()
+        username = data.get("username", "").strip()
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+        specialization = data.get("specialization", "").strip()
+        qualification = data.get("qualification", "").strip()
+        license_number = data.get("license_number", "").strip()
+        contact_number = data.get("contact_number", "").strip()
+
+        if not all([
+            admin_user_id, full_name, username, email,
+            password, specialization, qualification,
+            license_number, contact_number
+        ]):
+            return jsonify({
+                "error": "All fields are required."
+            }), 400
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            return jsonify({
+                "error": "Please enter a valid email address."
+            }), 400
+
+        if len(password) < 8:
+            return jsonify({
+                "error": "Password must contain at least 8 characters."
+            }), 400
+
+        if not re.fullmatch(r"\d{10}", contact_number):
+            return jsonify({
+                "error": "Contact number must contain exactly 10 digits."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin account
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Create doctor user account
+        hashed_password = generate_password_hash(password)
+
+        cursor.execute("""
+            INSERT INTO users
+            (full_name, username, email, password_hash, role)
+            VALUES (%s, %s, %s, %s, 'doctor')
+        """, (
+            full_name,
+            username,
+            email,
+            hashed_password
+        ))
+
+        doctor_user_id = cursor.lastrowid
+
+        # Create doctor profile
+        cursor.execute("""
+            INSERT INTO doctors
+            (user_id, specialization, qualification,
+             license_number, contact_number)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            doctor_user_id,
+            specialization,
+            qualification,
+            license_number,
+            contact_number
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Doctor account created successfully!",
+            "doctor_user_id": doctor_user_id
+        }), 201
+
+    except mysql.connector.IntegrityError:
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": "Username, email or license number already exists."
+        }), 409
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/doctors/<int:doctor_id>", methods=["PUT"])
+def admin_update_doctor(doctor_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+
+        admin_user_id = data.get("admin_user_id")
+        full_name = data.get("full_name", "").strip()
+        email = data.get("email", "").strip()
+        specialization = data.get("specialization", "").strip()
+        qualification = data.get("qualification", "").strip()
+        license_number = data.get("license_number", "").strip()
+        contact_number = data.get("contact_number", "").strip()
+
+        if not all([
+            admin_user_id, full_name, email,
+            specialization, qualification,
+            license_number, contact_number
+        ]):
+            return jsonify({"error": "All fields are required."}), 400
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            return jsonify({"error": "Please enter a valid email address."}), 400
+
+        if not re.fullmatch(r"\d{10}", contact_number):
+            return jsonify({"error": "Contact number must contain exactly 10 digits."}), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s AND role = 'admin'
+        """, (admin_user_id,))
+
+        if not cursor.fetchone():
+            return jsonify({"error": "Unauthorized. Admin account required."}), 403
+
+        cursor.execute("""
+            SELECT user_id
+            FROM doctors
+            WHERE doctor_id = %s
+        """, (doctor_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({"error": "Doctor not found."}), 404
+
+        cursor.execute("""
+            UPDATE users
+            SET full_name = %s, email = %s
+            WHERE user_id = %s AND role = 'doctor'
+        """, (full_name, email, doctor["user_id"]))
+
+        cursor.execute("""
+            UPDATE doctors
+            SET specialization = %s,
+                qualification = %s,
+                license_number = %s,
+                contact_number = %s
+            WHERE doctor_id = %s
+        """, (
+            specialization,
+            qualification,
+            license_number,
+            contact_number,
+            doctor_id
+        ))
+
+        connection.commit()
+
+        return jsonify({"message": "Doctor details updated successfully!"}), 200
+
+    except mysql.connector.IntegrityError:
+        if connection:
+            connection.rollback()
+        return jsonify({"error": "Email or license number already exists."}), 409
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+        return jsonify({"error": str(error)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/doctors/<int:doctor_id>/deactivate", methods=["PUT"])
+def admin_deactivate_doctor(doctor_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+        admin_user_id = data.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({"error": "Admin user ID is required."}), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s AND role = 'admin'
+        """, (admin_user_id,))
+
+        if not cursor.fetchone():
+            return jsonify({"error": "Unauthorized. Admin account required."}), 403
+
+        cursor.execute("""
+            SELECT user_id
+            FROM doctors
+            WHERE doctor_id = %s
+        """, (doctor_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({"error": "Doctor not found."}), 404
+
+        cursor.execute("""
+            UPDATE users
+            SET is_active = 0
+            WHERE user_id = %s AND role = 'doctor'
+        """, (doctor["user_id"],))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Doctor account deactivated successfully!"
+        }), 200
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+        return jsonify({"error": str(error)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/doctors/<int:doctor_id>/activate", methods=["PUT"])
+def admin_activate_doctor(doctor_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+        admin_user_id = data.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({"error": "Admin user ID is required."}), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s AND role = 'admin'
+        """, (admin_user_id,))
+
+        if not cursor.fetchone():
+            return jsonify({"error": "Unauthorized. Admin account required."}), 403
+
+        cursor.execute("""
+            SELECT user_id
+            FROM doctors
+            WHERE doctor_id = %s
+        """, (doctor_id,))
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            return jsonify({"error": "Doctor not found."}), 404
+
+        cursor.execute("""
+            UPDATE users
+            SET is_active = 1
+            WHERE user_id = %s AND role = 'doctor'
+        """, (doctor["user_id"],))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Doctor account activated successfully!"
+        }), 200
+
+    except mysql.connector.Error as error:
+        if connection:
+            connection.rollback()
+        return jsonify({"error": str(error)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()        
+
+@app.route("/admin/doctors", methods=["GET"])
+def admin_get_all_doctors():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin account
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Get all doctors
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                d.doctor_id,
+                u.full_name,
+                u.email,
+                u.is_active,
+                d.specialization,
+                d.qualification,
+                d.license_number,
+                d.contact_number
+            FROM users u
+            INNER JOIN doctors d
+                ON u.user_id = d.user_id
+            WHERE u.role = 'doctor'
+            ORDER BY u.full_name
+        """)
+
+        doctors = cursor.fetchall()
+
+        return jsonify({
+            "doctors": doctors,
+            "total_doctors": len(doctors)
+        }), 200
+
+    except mysql.connector.Error as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/patients", methods=["GET"])
+def admin_get_all_patients():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin account
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Get all students and staff
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.full_name,
+                u.username,
+                u.email,
+                u.role,
+                p.patient_id,
+                p.patient_type,
+                p.registration_number,
+                p.division,
+                p.contact_number
+            FROM users u
+            INNER JOIN patients p
+                ON u.user_id = p.user_id
+            WHERE u.role IN ('student', 'staff')
+            ORDER BY u.full_name
+        """)
+
+        patients = cursor.fetchall()
+
+        return jsonify({
+            "patients": patients,
+            "total_patients": len(patients)
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/appointments", methods=["GET"])
+def admin_get_all_appointments():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin account
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+              # Get all appointments
+        cursor.execute("""
+            SELECT
+                a.appointment_id,
+                a.patient_id,
+                pu.full_name AS patient_name,
+                p.patient_type,
+                p.registration_number,
+                a.doctor_id,
+                du.full_name AS doctor_name,
+                d.specialization,
+                a.appointment_date,
+                a.appointment_time,
+                a.reason,
+                a.status,
+                a.created_at
+            FROM appointments a
+            INNER JOIN patients p
+                ON a.patient_id = p.patient_id
+            INNER JOIN users pu
+                ON p.user_id = pu.user_id
+            INNER JOIN doctors d
+                ON a.doctor_id = d.doctor_id
+            INNER JOIN users du
+                ON d.user_id = du.user_id
+            ORDER BY a.appointment_date DESC,
+                     a.appointment_time DESC
+        """)
+
+        appointments = cursor.fetchall()
+
+        for appointment in appointments:
+            appointment["appointment_time"] = str(
+                appointment["appointment_time"]
+            )
+            appointment["appointment_date"] = str(
+                appointment["appointment_date"]
+            )
+            appointment["created_at"] = str(
+                appointment["created_at"]
+            )
+
+        return jsonify({
+            "appointments": appointments,
+            "total_appointments": len(appointments)
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/medical-submissions", methods=["GET"])
+def admin_get_all_medical_submissions():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin account
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Get all medical submissions
+        cursor.execute("""
+            SELECT
+                ms.submission_id,
+                ms.patient_id,
+                pu.full_name AS patient_name,
+                p.patient_type,
+                p.registration_number,
+                ms.doctor_id,
+                du.full_name AS doctor_name,
+                ms.leave_from,
+                ms.leave_to,
+                ms.reason,
+                ms.medical_document,
+                ms.status,
+                ms.doctor_remarks,
+                ms.submitted_at,
+                ms.reviewed_at
+            FROM medical_submissions ms
+            INNER JOIN patients p
+                ON ms.patient_id = p.patient_id
+            INNER JOIN users pu
+                ON p.user_id = pu.user_id
+            LEFT JOIN doctors d
+                ON ms.doctor_id = d.doctor_id
+            LEFT JOIN users du
+                ON d.user_id = du.user_id
+            ORDER BY ms.submitted_at DESC
+        """)
+
+        submissions = cursor.fetchall()
+
+        for submission in submissions:
+            for key, value in submission.items():
+                if value is not None:
+                    submission[key] = str(value) if key in [
+                        "leave_from",
+                        "leave_to",
+                        "submitted_at",
+                        "reviewed_at"
+                    ] else value
+
+        return jsonify({
+            "submissions": submissions,
+            "total_submissions": len(submissions)
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+@app.route("/admin/dashboard-stats", methods=["GET"])
+def admin_dashboard_stats():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Dashboard statistics
+        cursor.execute("""
+            SELECT
+                (SELECT COUNT(*)
+                 FROM users
+                 WHERE role = 'student') AS total_students,
+
+                (SELECT COUNT(*)
+                 FROM users
+                 WHERE role = 'staff') AS total_staff,
+
+                (SELECT COUNT(*)
+                 FROM users
+                 WHERE role = 'doctor') AS total_doctors,
+
+                (SELECT COUNT(*)
+                 FROM appointments) AS total_appointments,
+
+                (SELECT COUNT(*)
+                 FROM appointments
+                 WHERE status = 'pending') AS pending_appointments,
+
+                (SELECT COUNT(*)
+                 FROM medical_submissions) AS total_submissions,
+
+                (SELECT COUNT(*)
+                 FROM medical_submissions
+                 WHERE status = 'pending') AS pending_submissions
+        """)
+
+        stats = cursor.fetchone()
+
+        return jsonify({
+            "message": "Admin dashboard statistics loaded successfully.",
+            "statistics": stats
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()   
+
+         
+@app.route("/admin/medical-records", methods=["GET"])
+def admin_medical_records():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Get all medical records
+        cursor.execute("""
+            SELECT
+                mr.record_id,
+                mr.patient_id,
+                pu.full_name AS patient_name,
+                mr.doctor_id,
+                du.full_name AS doctor_name,
+                mr.diagnosis,
+                mr.treatment,
+                mr.record_date
+            FROM medical_records mr
+            JOIN patients p
+                ON mr.patient_id = p.patient_id
+            JOIN users pu
+                ON p.user_id = pu.user_id
+            LEFT JOIN doctors d
+                ON mr.doctor_id = d.doctor_id
+            LEFT JOIN users du
+                ON d.user_id = du.user_id
+            ORDER BY mr.record_date DESC
+        """)
+
+        records = cursor.fetchall()
+
+        # Get prescriptions for each medical record
+        for record in records:
+
+            cursor.execute("""
+                SELECT
+                    prescription_id,
+                    medicine_name,
+                    dosage,
+                    frequency,
+                    duration,
+                    instructions,
+                    prescribed_at
+                FROM prescriptions
+                WHERE record_id = %s
+                ORDER BY prescribed_at DESC
+            """, (record["record_id"],))
+
+            prescriptions = cursor.fetchall()
+
+            for prescription in prescriptions:
+                if prescription["prescribed_at"]:
+                    prescription["prescribed_at"] = str(
+                        prescription["prescribed_at"]
+                    )
+
+            record["prescriptions"] = prescriptions
+
+            if record["record_date"]:
+                record["record_date"] = str(record["record_date"])
+
+        return jsonify({
+            "message": "Admin medical records loaded successfully.",
+            "total_records": len(records),
+            "records": records
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+
+@app.route("/admin/notifications", methods=["GET"])
+def admin_notifications():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Get admin notifications
+        cursor.execute("""
+            SELECT
+                notification_id,
+                title,
+                message,
+                notification_type,
+                is_read,
+                created_at
+            FROM notifications
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (admin_user_id,))
+
+        notifications = cursor.fetchall()
+
+        unread_count = 0
+
+        for notification in notifications:
+
+            if notification["created_at"]:
+                notification["created_at"] = str(
+                    notification["created_at"]
+                )
+
+            if notification["is_read"]:
+                notification["is_read"] = True
+            else:
+                notification["is_read"] = False
+                unread_count += 1
+
+        return jsonify({
+            "message": "Admin notifications loaded successfully.",
+            "total_notifications": len(notifications),
+            "unread_count": unread_count,
+            "notifications": notifications
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+      
+@app.route("/admin/reports", methods=["GET"])
+def admin_reports():
+
+    connection = None
+    cursor = None
+
+    try:
+        admin_user_id = request.args.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # User report
+        cursor.execute("""
+            SELECT
+                SUM(CASE WHEN role = 'student' THEN 1 ELSE 0 END)
+                    AS total_students,
+                SUM(CASE WHEN role = 'staff' THEN 1 ELSE 0 END)
+                    AS total_staff,
+                SUM(CASE WHEN role = 'doctor' THEN 1 ELSE 0 END)
+                    AS total_doctors
+            FROM users
+        """)
+
+        user_report = cursor.fetchone()
+
+        # Appointment report
+        cursor.execute("""
+            SELECT
+                status,
+                COUNT(*) AS total
+            FROM appointments
+            GROUP BY status
+        """)
+
+        appointment_report = cursor.fetchall()
+
+        # Medical submission report
+        cursor.execute("""
+            SELECT
+                status,
+                COUNT(*) AS total
+            FROM medical_submissions
+            GROUP BY status
+        """)
+
+        submission_report = cursor.fetchall()
+
+        # Medical records report
+        cursor.execute("""
+            SELECT COUNT(*) AS total_medical_records
+            FROM medical_records
+        """)
+
+        medical_records_report = cursor.fetchone()
+
+        return jsonify({
+            "message": "Admin reports loaded successfully.",
+            "user_report": user_report,
+            "appointment_report": appointment_report,
+            "medical_submission_report": submission_report,
+            "medical_records_report": medical_records_report
+        }), 200
+
+    except mysql.connector.Error as error:
 
         return jsonify({
             "error": str(error)

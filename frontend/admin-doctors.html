@@ -1,0 +1,674 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Management | ITUM Medical Center</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        .sidebar {
+            position: fixed;
+            width: 250px;
+            height: 100vh;
+            background: #0b2a5b;
+            color: white;
+            padding: 28px 18px;
+        }
+
+        .brand {
+            font-size: 19px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .brand span {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: #cbd5e1;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #d9e2ee;
+            text-decoration: none;
+            padding: 14px;
+            margin-bottom: 8px;
+            border-radius: 9px;
+            font-size: 14px;
+        }
+
+        .sidebar a.active,
+        .sidebar a:hover {
+            background: #1565d8;
+            color: white;
+        }
+
+        .main {
+            margin-left: 250px;
+            padding: 35px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #0b2a5b;
+            font-size: 25px;
+        }
+
+        .logout {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 11px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .summary {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid #e8edf5;
+        }
+
+        .summary p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .summary h2 {
+            color: #0b2a5b;
+            font-size: 29px;
+        }
+
+        .table-container {
+            background: white;
+            padding: 24px;
+            border-radius: 13px;
+            box-shadow: 0 3px 12px #00000008;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .table-header h2 {
+            color: #0b2a5b;
+            font-size: 19px;
+        }
+
+        .search {
+            padding: 11px 14px;
+            border: 1px solid #d9e2ee;
+            border-radius: 8px;
+            outline: none;
+            width: 250px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #edf0f5;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f5f8fc;
+            color: #475569;
+        }
+
+        .status {
+            color: #64748b;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        @media(max-width: 700px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+    <div class="brand">
+        ITUM MEDICAL CENTER
+        <span>Admin Management Panel</span>
+    </div>
+
+    <a href="admin-dashboard.html">🏠 Dashboard</a>
+    <a href="admin-patients.html">👨‍🎓 Students & Staff</a>
+    <a href="admin-doctors.html" class="active">🩺 Doctors</a>
+    <a href="admin-appointments.html">📅 Appointments</a>
+    <a href="admin-submissions.html">📄 Medical Submissions</a>
+    <a href="admin-medical-records.html">📋 Medical Records</a>
+    <a href="admin-notifications.html">🔔 Notifications</a>
+    <a href="admin-reports.html">📊 Reports</a>
+
+    <a class="logout" onclick="logout()">🚪 Logout</a>
+</aside>
+
+    <main class="main">
+
+        <div class="topbar">
+            <h1>Doctor Management</h1>
+            <button class="logout" onclick="logout()">Logout</button>
+        </div>
+
+        <section class="summary">
+            <p>Total Registered Doctors</p>
+            <h2 id="doctorCount">0</h2>
+        </section>
+
+        <section class="table-container">
+
+            <!-- Doctor Registration Form -->
+<div class="content-card">
+    <h2>Register New Doctor</h2>
+
+    <form id="doctorRegistrationForm">
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="full_name" required>
+        </div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="username" required>
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" required>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" minlength="8" required>
+        </div>
+
+        <div class="form-group">
+            <label>Specialization</label>
+            <input type="text" id="specialization" required>
+        </div>
+
+        <div class="form-group">
+            <label>Qualification</label>
+            <input type="text" id="qualification" required>
+        </div>
+
+        <div class="form-group">
+            <label>Medical License Number</label>
+            <input type="text" id="license_number" required>
+        </div>
+
+        <div class="form-group">
+            <label>Contact Number</label>
+            <input type="tel" id="contact_number"
+                   pattern="[0-9]{10}" maxlength="10" required>
+        </div>
+
+        <button type="submit">Register Doctor</button>
+
+        <p id="doctorFormMessage"></p>
+
+    </form>
+</div>
+
+            <div class="table-header">
+                <h2>Registered Doctors</h2>
+
+                <input
+                    type="text"
+                    class="search"
+                    id="searchInput"
+                    placeholder="Search doctors..."
+                    oninput="filterDoctors()"
+                >
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Doctor ID</th>
+                        <th>Doctor Name</th>
+                        <th>Email</th>
+                        <th>Specialization</th>
+                        <th>Qualification</th>
+                        <th>License Number</th>
+                        <th>Contact Number</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="doctorsTable">
+                    <tr>
+                        <td colspan="7">Loading doctors...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p class="status" id="statusMessage"></p>
+
+        </section>
+
+    </main>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        if (!loggedInUser || loggedInUser.role !== "admin") {
+            window.location.href = "index.html";
+        }
+
+        let allDoctors = [];
+
+        async function loadDoctors() {
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/admin/doctors?admin_user_id=${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load doctors.");
+                }
+
+                allDoctors = data.doctors || [];
+
+                document.getElementById("doctorCount").textContent =
+                    data.total_doctors ?? allDoctors.length;
+
+                displayDoctors(allDoctors);
+
+                document.getElementById("statusMessage").textContent =
+                    "Doctor information loaded successfully.";
+
+            } catch (error) {
+                document.getElementById("doctorsTable").innerHTML =
+                    `<tr><td colspan="7">${error.message}</td></tr>`;
+            }
+        }
+
+        // Register New Doctor
+document.getElementById("doctorRegistrationForm")
+    .addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const message = document.getElementById("doctorFormMessage");
+
+    const doctorData = {
+        admin_user_id: loggedInUser.user_id,
+        full_name: document.getElementById("full_name").value.trim(),
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+        specialization: document.getElementById("specialization").value.trim(),
+        qualification: document.getElementById("qualification").value.trim(),
+        license_number: document.getElementById("license_number").value.trim(),
+        contact_number: document.getElementById("contact_number").value.trim()
+    };
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/admin/doctors", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(doctorData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            message.style.color = "green";
+            message.textContent = data.message;
+
+            document.getElementById("doctorRegistrationForm").reset();
+
+            await loadDoctors();
+
+        } else {
+            message.style.color = "red";
+            message.textContent = data.error || "Doctor registration failed.";
+        }
+
+    } catch (error) {
+        message.style.color = "red";
+        message.textContent = "Unable to connect to the server.";
+        console.error(error);
+    }
+});
+
+        function displayDoctors(doctors) {
+
+    const table = document.getElementById("doctorsTable");
+
+    if (doctors.length === 0) {
+        table.innerHTML =
+            '<tr><td colspan="9">No doctors found.</td></tr>';
+        return;
+    }
+
+    table.innerHTML = doctors.map(doctor => `
+        <tr>
+            <td>${doctor.doctor_id ?? "-"}</td>
+            <td>${doctor.full_name ?? "-"}</td>
+            <td>${doctor.email ?? "-"}</td>
+            <td>${doctor.specialization ?? "-"}</td>
+            <td>${doctor.qualification?.trim() || "Not Provided"}</td>
+            <td>${doctor.license_number ?? "-"}</td>
+            <td>${doctor.contact_number ?? "-"}</td>
+
+            <td>
+                ${Number(doctor.is_active) === 1 ? "Active" : "Inactive"}
+            </td>
+
+            <td>
+                <button onclick="editDoctor(${doctor.doctor_id})">
+                    Edit
+                </button>
+
+                ${
+                    Number(doctor.is_active) === 1
+                    ? `<button onclick="deactivateDoctor(${doctor.doctor_id})">
+                           Deactivate
+                       </button>`
+                    : `<button onclick="activateDoctor(${doctor.doctor_id})">
+                           Activate
+                       </button>`
+                }
+            </td>
+        </tr>
+    `).join("");
+}
+
+
+function filterDoctors() {
+
+    const searchValue = document
+        .getElementById("searchInput")
+        .value.toLowerCase();
+
+    const filtered = allDoctors.filter(doctor =>
+        String(doctor.full_name || "").toLowerCase().includes(searchValue) ||
+        String(doctor.email || "").toLowerCase().includes(searchValue) ||
+        String(doctor.specialization || "").toLowerCase().includes(searchValue) ||
+        String(doctor.license_number || "").toLowerCase().includes(searchValue)
+    );
+
+    displayDoctors(filtered);
+}
+
+async function deactivateDoctor(doctorId) {
+
+    if (!confirm("Are you sure you want to deactivate this doctor?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/admin/doctors/${doctorId}/deactivate`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    admin_user_id: loggedInUser.user_id
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Failed to deactivate doctor.");
+            return;
+        }
+
+        alert(result.message);
+        loadDoctors();
+
+    } catch (error) {
+        alert("Error connecting to server.");
+        console.error(error);
+    }
+}
+
+
+async function activateDoctor(doctorId) {
+
+    if (!confirm("Are you sure you want to activate this doctor?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/admin/doctors/${doctorId}/activate`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    admin_user_id: loggedInUser.user_id
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Failed to activate doctor.");
+            return;
+        }
+
+        alert(result.message);
+        loadDoctors();
+
+    } catch (error) {
+        alert("Error connecting to server.");
+        console.error(error);
+    }
+}
+async function deactivateDoctor(doctorId) {
+
+    if (!confirm("Are you sure you want to deactivate this doctor?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/admin/doctors/${doctorId}/deactivate`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    admin_user_id: loggedInUser.user_id
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Failed to deactivate doctor.");
+            return;
+        }
+
+        alert(result.message);
+        loadDoctors();
+
+    } catch (error) {
+        alert("Error connecting to server.");
+        console.error(error);
+    }
+}
+
+
+async function activateDoctor(doctorId) {
+
+    if (!confirm("Are you sure you want to activate this doctor?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/admin/doctors/${doctorId}/activate`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    admin_user_id: loggedInUser.user_id
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Failed to activate doctor.");
+            return;
+        }
+
+        alert(result.message);
+        loadDoctors();
+
+    } catch (error) {
+        alert("Error connecting to server.");
+        console.error(error);
+    }
+}
+async function editDoctor(doctorId) {
+
+    const doctor = allDoctors.find(
+        d => Number(d.doctor_id) === Number(doctorId)
+    );
+
+    if (!doctor) {
+        alert("Doctor not found.");
+        return;
+    }
+
+    const full_name = prompt("Enter Doctor Name:", doctor.full_name);
+    if (full_name === null) return;
+
+    const email = prompt("Enter Email:", doctor.email);
+    if (email === null) return;
+
+    const specialization = prompt("Enter Specialization:", doctor.specialization);
+    if (specialization === null) return;
+
+    const qualification = prompt("Enter Qualification:", doctor.qualification);
+    if (qualification === null) return;
+
+    const license_number = prompt("Enter License Number:", doctor.license_number);
+    if (license_number === null) return;
+
+    const contact_number = prompt("Enter Contact Number:", doctor.contact_number);
+    if (contact_number === null) return;
+
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:5000/admin/doctors/${doctorId}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    admin_user_id: loggedInUser.user_id,
+                    full_name,
+                    email,
+                    specialization,
+                    qualification,
+                    license_number,
+                    contact_number
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Failed to update doctor.");
+            return;
+        }
+
+        alert(result.message);
+        loadDoctors();
+
+    } catch (error) {
+        alert("Error connecting to server.");
+        console.error(error);
+    }
+}
+
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+
+        loadDoctors();
+    </script>
+
+</body>
+</html>

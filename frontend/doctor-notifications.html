@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Notifications | ITUM Medical Center</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            color: #26344a;
+        }
+
+        .header {
+            background: #0b2a5b;
+            color: white;
+            padding: 22px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h2 {
+            font-size: 21px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #d9e2ee;
+            margin-top: 5px;
+        }
+
+        .back-btn {
+            background: white;
+            color: #0b2a5b;
+            text-decoration: none;
+            padding: 11px 18px;
+            border-radius: 7px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h1 {
+            color: #0b2a5b;
+            font-size: 27px;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+        }
+
+        .summary-box span {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .summary-box h2 {
+            color: #0b2a5b;
+            margin-top: 8px;
+            font-size: 27px;
+        }
+
+        .notification-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .notification {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            border-left: 5px solid #1565d8;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+        }
+
+        .notification.unread {
+            background: #f0f6ff;
+            border-left-color: #1565d8;
+        }
+
+        .notification.read {
+            border-left-color: #cbd5e1;
+        }
+
+        .notification-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .notification h3 {
+            color: #0b2a5b;
+            font-size: 16px;
+        }
+
+        .notification p {
+            color: #526174;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .notification-time {
+            display: block;
+            color: #8793a5;
+            font-size: 12px;
+            margin-top: 13px;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .unread-badge {
+            background: #e5efff;
+            color: #1556a8;
+        }
+
+        .read-badge {
+            background: #edf0f5;
+            color: #64748b;
+        }
+
+        .read-btn {
+            margin-top: 15px;
+            border: none;
+            background: #1565d8;
+            color: white;
+            padding: 9px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .read-btn:hover {
+            background: #0b4f94;
+        }
+
+        .status-message {
+            background: white;
+            padding: 35px;
+            text-align: center;
+            border-radius: 12px;
+            color: #718096;
+        }
+
+        .error {
+            color: #d93025;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 18px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .summary {
+                flex-direction: column;
+            }
+
+            .notification-top {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <div>
+            <h2>ITUM Medical Center</h2>
+            <p>Doctor Portal</p>
+        </div>
+
+        <a href="doctor-dashboard.html" class="back-btn">
+            ← Back to Dashboard
+        </a>
+    </header>
+
+    <main class="container">
+
+        <div class="page-title">
+            <h1>Notifications</h1>
+            <p>View your latest appointment requests and notifications.</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-box">
+                <span>Total Notifications</span>
+                <h2 id="totalNotifications">0</h2>
+            </div>
+
+            <div class="summary-box">
+                <span>Unread Notifications</span>
+                <h2 id="unreadNotifications">0</h2>
+            </div>
+        </div>
+
+        <div class="notification-list" id="notificationList">
+            <div class="status-message">
+                Loading notifications...
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const loggedInUser = JSON.parse(
+            localStorage.getItem("loggedInUser") || "null"
+        );
+
+        async function loadNotifications() {
+
+            const container = document.getElementById("notificationList");
+
+            if (!loggedInUser || !loggedInUser.user_id ||
+                loggedInUser.role !== "doctor") {
+
+                container.innerHTML = `
+                    <div class="status-message error">
+                        Please log in using a doctor account.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    `http://127.0.0.1:5000/doctor/notifications/${loggedInUser.user_id}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load notifications.");
+                }
+
+                const notifications = data.notifications || [];
+
+                const unreadCount = notifications.filter(
+                    item => Number(item.is_read) === 0
+                ).length;
+
+                document.getElementById("totalNotifications").textContent =
+                    notifications.length;
+
+                document.getElementById("unreadNotifications").textContent =
+                    unreadCount;
+
+                displayNotifications(notifications);
+
+            } catch (error) {
+
+                container.innerHTML = `
+                    <div class="status-message error">
+                        ${escapeHTML(error.message)}
+                    </div>
+                `;
+
+            }
+        }
+
+        function displayNotifications(notifications) {
+
+            const container = document.getElementById("notificationList");
+
+            if (notifications.length === 0) {
+
+                container.innerHTML = `
+                    <div class="status-message">
+                        <h3>No Notifications Yet</h3>
+                        <p style="margin-top: 8px;">
+                            You don't have any notifications at the moment.
+                        </p>
+                    </div>
+                `;
+
+                return;
+            }
+
+            container.innerHTML = notifications.map(item => {
+
+                const isRead = Number(item.is_read) === 1;
+
+                return `
+                    <div class="notification ${isRead ? "read" : "unread"}">
+
+                        <div class="notification-top">
+                            <h3>${escapeHTML(item.title)}</h3>
+
+                            <span class="badge ${isRead ? "read-badge" : "unread-badge"}">
+                                ${isRead ? "Read" : "Unread"}
+                            </span>
+                        </div>
+
+                        <p>${escapeHTML(item.message)}</p>
+
+                        <span class="notification-time">
+                            ${formatDate(item.created_at)}
+                        </span>
+
+                        ${!isRead ? `
+                            <button
+                                class="read-btn"
+                                onclick="markAsRead(${Number(item.notification_id)})">
+                                Mark as Read
+                            </button>
+                        ` : ""}
+
+                    </div>
+                `;
+
+            }).join("");
+        }
+
+        async function markAsRead(notificationId) {
+
+            try {
+
+                const response = await fetch(
+                    `http://127.0.0.1:5000/student/notifications/${notificationId}/read`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            user_id: loggedInUser.user_id
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to update notification.");
+                }
+
+                await loadNotifications();
+
+            } catch (error) {
+
+                alert(error.message);
+
+            }
+        }
+
+        function formatDate(value) {
+
+            if (!value) return "Date unavailable";
+
+            const date = new Date(value);
+
+            if (isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return date.toLocaleString();
+        }
+
+        function escapeHTML(value) {
+
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        loadNotifications();
+    </script>
+
+</body>
+</html>
