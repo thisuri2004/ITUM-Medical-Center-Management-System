@@ -145,8 +145,7 @@ def register():
             """,
             (user_id, patient_type, registration_number)
         )
-
-        connection.commit()
+      
 
         return jsonify({
             "message": "Registration successful!"
@@ -457,6 +456,7 @@ def get_doctors():
                 d.specialization
             FROM doctors d
             JOIN users u ON d.user_id = u.user_id
+            WHERE u.is_active = 1
             ORDER BY u.full_name
         """)
 
@@ -573,6 +573,21 @@ def book_appointment():
             "You have received a new appointment request.",
             "appointment",
             0
+        ))
+                # Create notification for all admin accounts
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            SELECT
+                user_id,
+                'New Appointment Received',
+                %s,
+                'appointment',
+                0
+            FROM users
+            WHERE role = 'admin'
+        """, (
+            f"A new appointment (ID: {appointment_id}) has been booked.",
         ))
 
         connection.commit()
@@ -1161,11 +1176,31 @@ def submit_medical_certificate():
             database_file_path
         ))
 
+        # Get the newly created submission ID
+        submission_id = cursor.lastrowid
+
+        # Send notification to all admin accounts
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            SELECT
+                user_id,
+                'New Medical Submission Received',
+                %s,
+                'general',
+                0
+            FROM users
+            WHERE role = 'admin'
+        """, (
+            f"A new medical submission (ID: {submission_id}) has been received.",
+        ))
+
+        # Commit submission and notification
         connection.commit()
 
         return jsonify({
             "message": "Medical certificate submitted successfully.",
-            "submission_id": cursor.lastrowid
+            "submission_id": submission_id
         }), 201
 
     except mysql.connector.Error as error:
@@ -2077,6 +2112,21 @@ def admin_register_doctor():
             contact_number
         ))
 
+                # Send notification to all other admin accounts
+        cursor.execute("""
+            INSERT INTO notifications
+            (user_id, title, message, notification_type, is_read)
+            SELECT
+                user_id,
+                'New Doctor Added',
+                %s,
+                'general',
+                0
+            FROM users
+            WHERE role = 'admin'
+""", (
+    f"Admin added a new doctor: {full_name}.",
+))
         connection.commit()
 
         return jsonify({
@@ -2494,7 +2544,7 @@ def admin_get_all_appointments():
                 "error": "Unauthorized. Admin account required."
             }), 403
 
-              # Get all appointments
+                     # Get all appointments
         cursor.execute("""
             SELECT
                 a.appointment_id,
@@ -2600,7 +2650,6 @@ def admin_get_all_medical_submissions():
                 ms.leave_from,
                 ms.leave_to,
                 ms.reason,
-                ms.medical_document,
                 ms.status,
                 ms.doctor_remarks,
                 ms.submitted_at,
@@ -2923,6 +2972,155 @@ def admin_notifications():
 
         if connection and connection.is_connected():
             connection.close()
+
+
+@app.route("/admin/notifications/<int:notification_id>/read", methods=["PUT"])
+def admin_mark_notification_read(notification_id):
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+        admin_user_id = data.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Verify notification belongs to this admin
+        cursor.execute("""
+            SELECT notification_id
+            FROM notifications
+            WHERE notification_id = %s
+              AND user_id = %s
+        """, (notification_id, admin_user_id))
+
+        notification = cursor.fetchone()
+
+        if not notification:
+            return jsonify({
+                "error": "Notification not found."
+            }), 404
+
+        # Mark as read
+        cursor.execute("""
+            UPDATE notifications
+            SET is_read = 1
+            WHERE notification_id = %s
+              AND user_id = %s
+        """, (notification_id, admin_user_id))
+
+        connection.commit()
+
+        return jsonify({
+            "message": "Notification marked as read successfully."
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
+
+@app.route("/admin/notifications/read-all", methods=["PUT"])
+def admin_mark_all_notifications_read():
+
+    connection = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+        admin_user_id = data.get("admin_user_id")
+
+        if not admin_user_id:
+            return jsonify({
+                "error": "Admin user ID is required."
+            }), 400
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Verify admin
+        cursor.execute("""
+            SELECT user_id
+            FROM users
+            WHERE user_id = %s
+              AND role = 'admin'
+        """, (admin_user_id,))
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            return jsonify({
+                "error": "Unauthorized. Admin account required."
+            }), 403
+
+        # Mark all admin notifications as read
+        cursor.execute("""
+            UPDATE notifications
+            SET is_read = 1
+            WHERE user_id = %s
+              AND is_read = 0
+        """, (admin_user_id,))
+
+        updated_count = cursor.rowcount
+
+        connection.commit()
+
+        return jsonify({
+            "message": "All notifications marked as read successfully.",
+            "updated_count": updated_count
+        }), 200
+
+    except mysql.connector.Error as error:
+
+        if connection:
+            connection.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection and connection.is_connected():
+            connection.close()
+
 
       
 @app.route("/admin/reports", methods=["GET"])
