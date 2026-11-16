@@ -284,11 +284,15 @@
                 <h2 id="totalStaff">0</h2>
             </div>
 
-            <div class="stat-card">
-                <p>Total Doctors</p>
-                <h2 id="totalDoctors">0</h2>
-            </div>
+           <div class="stat-card">
+    <p>Total Active Doctors</p>
+    <h2 id="totalDoctors">0</h2>
+</div>
 
+<div class="stat-card">
+    <p>Deactivated Doctors</p>
+    <h2 id="deactivatedDoctors">0</h2>
+</div>
             <div class="stat-card">
                 <p>Total Medical Records</p>
                 <h2 id="totalRecords">0</h2>
@@ -350,9 +354,12 @@
                 document.getElementById("totalStaff").textContent =
                     data.user_report.total_staff ?? 0;
 
-                document.getElementById("totalDoctors").textContent =
-                    data.user_report.total_doctors ?? 0;
+               document.getElementById("totalDoctors").textContent =
+                data.user_report.total_doctors ?? 0;
 
+               document.getElementById("deactivatedDoctors").textContent =
+                data.user_report.deactivated_doctors ?? 0;
+                
                 const totalRecords =
                     data.medical_records_report.total_medical_records ?? 0;
 

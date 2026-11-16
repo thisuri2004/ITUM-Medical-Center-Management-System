@@ -3155,20 +3155,33 @@ def admin_reports():
                 "error": "Unauthorized. Admin account required."
             }), 403
 
-        # User report
+           # User report
         cursor.execute("""
             SELECT
-                SUM(CASE WHEN role = 'student' THEN 1 ELSE 0 END)
-                    AS total_students,
-                SUM(CASE WHEN role = 'staff' THEN 1 ELSE 0 END)
-                    AS total_staff,
-                SUM(CASE WHEN role = 'doctor' THEN 1 ELSE 0 END)
-                    AS total_doctors
+                SUM(CASE
+                    WHEN role = 'student' THEN 1
+                    ELSE 0
+                END) AS total_students,
+
+                SUM(CASE
+                    WHEN role = 'staff' THEN 1
+                    ELSE 0
+                END) AS total_staff,
+
+                SUM(CASE
+                    WHEN role = 'doctor' AND is_active = 1 THEN 1
+                    ELSE 0
+                END) AS total_doctors,
+
+                SUM(CASE
+                    WHEN role = 'doctor' AND is_active = 0 THEN 1
+                    ELSE 0
+                END) AS deactivated_doctors
+
             FROM users
         """)
 
         user_report = cursor.fetchone()
-
         # Appointment report
         cursor.execute("""
             SELECT
